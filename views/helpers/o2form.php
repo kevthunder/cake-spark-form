@@ -3,7 +3,7 @@ class O2formHelper extends AppHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $custom_types = array('paginated_select');
+	var $custom_types = array('paginated_select','multiple');
 	 
 	 
 	 
@@ -124,6 +124,89 @@ class O2formHelper extends AppHelper {
 		}
 		//debug($options);
 		return $view->element('paginated_select',array('plugin'=>'o2form','options'=>$options,'label'=>$labelElement)); 
+	}
+	
+	function multiple($fieldName, $options = array() ){
+		if(array_key_exists('fields',$options)){
+			$options['fields'] = $options;
+		}
+		$def = array(
+			'table'=>array(
+				'cellspacing'=>0
+				'cellpadding'=>0
+			)
+		);
+		//normalize and count
+		$nbColls = 1;
+		$options['fields'] = Set::normalize($options['fields']);
+		foreach($tmp = $options['fields'] as $key => $field){
+			if($field === false){
+				unset($options['fields'][$key]);
+			}else{
+				if(!is_array($field) && !empty($field)){
+					$field = array('type'=>$field);
+				}
+				if(!array_key_exists('label',$field)){
+					$field['label'] = $this->defaultLabel($fieldName);
+				}
+				if(!empty($field['type']) && $field['type'] == 'hidden'){
+				}else{
+					$nbColls++
+				}
+			}
+		}
+		
+		$html .= '			<table class="subItems" cellspacing="0" cellpadding="0">'."\n";
+		$html .= '				<tr>'."\n";
+		$html .= '					<th>'.__('Code',true).'</th>'."\n";
+		$html .= '					<th>'.__('Label',true).'</th>'."\n";
+		if(count($type['operators'])>1){
+			$html .= '					<th>'.__('Operator',true).'</th>'."\n";
+		}
+		$html .= '					<th>'.__('Price',true).'</th>'."\n";
+		$html .= '					<th>'.__('Delete',true).'</th>'."\n";
+		$html .= '				</tr>'."\n";
+		$html .= '				<tr>'."\n";
+		$html .= '					<td>'."\n";
+		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.code',array('div'=>false,'label'=>false))."\n";
+		$html .= '					</td>'."\n";
+		$html .= '					<td>'."\n";
+		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.label',array('div'=>false,'label'=>false))."\n";
+		$html .= '					</td>'."\n";
+		if(count($type['operators'])>1){
+			$html .= '					<td>'."\n";
+			$html .= '						'.$this->Form->input('SubProduct.'.$key.'.operator',array('options'=>$type['operators'],'div'=>false,'label'=>false))."\n";
+			$html .= '					</td>'."\n";
+		}
+		$html .= '					<td>'."\n";
+		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.price',array('div'=>false,'label'=>false))."\n";
+		$html .= '					</td>'."\n";
+		$html .= '					<td>'."\n";
+		if(count($type['operators']==1)){
+			$html .= '						'.$this->Form->input('SubProduct.'.$key.'.operator',array('type'=>'hidden','value'=>$type['operators'][0]))."\n";
+		}
+		$html .= '						<a href="#" class="btDelete">-</a>'."\n";
+		$html .= '					</td>'."\n";
+		$html .= '				</tr>'."\n";
+		$html .= '			</table>'."\n";
+		$html .= '		</div>'."\n";
+		
+		return $html;
+	}
+	
+	function defaultLabel($fieldName){
+		if (strpos($fieldName, '.') !== false) {
+			$text = array_pop(explode('.', $fieldName));
+		} else {
+			$text = $fieldName;
+		}
+		if (substr($text, -3) == '_id') {
+			$text = substr($text, 0, strlen($text) - 3);
+		}
+		$text = __(Inflector::humanize(Inflector::underscore($text)), true);
+		
+				
+		return $text;
 	}
 }
 ?>
