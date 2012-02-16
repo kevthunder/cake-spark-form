@@ -1,0 +1,1 @@
+<?php echo $this->element('select_page',array('plugin'=>'o2form','options'=>$options)); ?>

@@ -1,0 +1,134 @@
+/* new clearfix */
+.clearfix:after {
+	visibility: hidden;
+	display: block;
+	font-size: 0;
+	content: " ";
+	clear: both;
+	height: 0;
+	}
+* html .clearfix             { zoom: 1; } /* IE6 */
+*:first-child+html .clearfix { zoom: 1; } /* IE7 */
+
+
+
+.ajax_item_list{
+	margin: 30px 0 10px 0;
+	padding: 0;
+	border: 1px solid #cccccc;
+	position: relative;
+}
+
+.ajax_item_list label{
+	top: -20px;
+	left: 0px;
+	
+	position: absolute;
+}
+
+.ajax_item_list div.selected {
+	margin: 0;
+	padding: 0;
+	width: 250px;
+	position: absolute;
+	top: 0;
+	left: 0px;
+}
+
+.ajax_item_list div.selected p.title{
+	background: #545454;
+	color: #ffffff;
+	margin: 0;
+	padding: 5px;
+}
+
+.ajax_item_list div.selected div.item{
+	float:none;
+	width:auto;
+}
+
+
+.ajax_item_list div.select_page{
+	margin: 0 0 0 250px;
+	padding: 0 0 0 0px;
+	border-left: 1px solid #cccccc;
+}
+.ajax_item_list div.loader{
+	background: url('../img/ajax-loader.gif') center no-repeat #eeeeee;
+	width: 50px;
+	height: 50px;
+	display: none;
+	position: absolute;
+	margin: -26px 0 0 101px;
+	padding: 0;
+	border: 1px solid #cccccc;
+	top: 50%;
+	left: 50%;
+	
+}
+
+.ajax_item_list div.select_page div.list{
+	margin: 0;
+	padding: 0;
+}
+
+.ajax_item_list div.item{
+	padding: 5px 0px 5px 0px;
+	margin: 0;
+	width:50%;
+	min-height:50px;
+	float:left;
+	position:relative;
+}
+.ajax_item_list div.item{
+	padding: 5px 0px 5px 0px;
+	width:50%;
+	float:left;
+	position:relative;
+}
+.ajax_item_list div.altrow{
+	background-color:#eeeeee;
+}
+.ajax_item_list div.left{
+	clear:left;
+}
+.ajax_item_list div.right{
+	clear:right;
+}
+.ajax_item_list div.item img{
+	position: absolute;
+	left: 5px;
+}
+.ajax_item_list div.item p, .ajax_item_list div.item a{
+	margin: 0px 10px 5px 60px;
+}
+.ajax_item_list div.item a.remove{
+	display:none;
+}
+.ajax_item_list div.selected_item a.remove{
+	display:block;
+}
+.ajax_item_list div.selected_item a.add{
+	display:none;
+}
+.ajax_item_list div.tools{
+	float:right;
+	margin: 10px 0 0 0;
+}
+.ajax_item_list div.tools .search{
+	float:left;
+	margin: 0 10px 0 0;
+}
+.ajax_item_list div.tools div{
+	padding: 0;
+}
+.ajax_item_list div.tools .search input{
+	float:left;
+	clear:none;
+	width:auto;
+}
+.ajax_item_list div.tools .search input.submit{
+}
+.ajax_item_list div.tools .paging{
+	margin: 5px 0 0 0;
+}
