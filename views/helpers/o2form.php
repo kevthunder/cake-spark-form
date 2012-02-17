@@ -110,91 +110,147 @@ class O2formHelper extends AppHelper {
 				$selected_ids[] = $select['id'];
 			}
 		}
-		if ($options['label'] !== false) {
-			$label = $options['label'];
-			if (!is_array($label)) {
-				$label = array('text'=>$label);
-			}
-			$labelText = null;
-			if (isset($label['text'])) {
-				$labelText = $label['text'];
-				//unset($label['text']);
-			}
-			$labelElement = $this->Form->label($fieldName, $labelText, $label);
-		}
+		$labelElement = $this->labelFor($fieldName, $options);
 		//debug($options);
 		return $view->element('paginated_select',array('plugin'=>'o2form','options'=>$options,'label'=>$labelElement)); 
 	}
 	
 	function multiple($fieldName, $options = array() ){
-		if(array_key_exists('fields',$options)){
+		//debug($options);
+		$this->Html->script('/o2form/js/multiple',array('inline'=>false));
+		$this->Html->css('/o2form/css/multiple',null,array('inline'=>false));
+		if(!array_key_exists('fields',$options)){
 			$options['fields'] = $options;
 		}
-		$def = array(
+		$defOpt = array(
 			'table'=>array(
-				'cellspacing'=>0
-				'cellpadding'=>0
+				'class'=>array('MultipleTable'),
+				'cellspacing'=>0,
+				'cellpadding'=>0,
+			),
+			'div'=>array(
+				'class'=>array('MultipleInput'),
+			),
+			'tr'=>array(
+				'class'=>array('line'),
+			),
+			'trAction'=>array(
+				'class'=>array('actionLine'),
+			),
+			'td'=>array(
+			),
+			'tdAction'=>array(
+				'class'=>array('actionCell'),
+			),
+			'model'=>array(
+				'class'=>array('modelLine'),
+				'fields'=>array('disabled'=>true),
+			),
+			'deleteField'=>array(
+				'spc' => 'deleteInput',
+				'type' => 'hidden',
 			)
 		);
 		//normalize and count
-		$nbColls = 1;
 		$options['fields'] = Set::normalize($options['fields']);
-		foreach($tmp = $options['fields'] as $key => $field){
+		$opt = array_merge($defOpt,$options);
+		$nbColls = 1;
+		
+		$values = current($this->value());
+		if(empty($values)){
+			$values = array();
+		}
+		foreach($tmp = $opt['fields'] as $key => $field){
 			if($field === false){
-				unset($options['fields'][$key]);
+				unset($opt['fields'][$key]);
 			}else{
-				if(!is_array($field) && !empty($field)){
+				if(empty($field)){
+					$field = array();
+				}
+				if(!is_array($field)){
 					$field = array('type'=>$field);
 				}
+				$def = array(
+					'div'=>false
+				);
+				$field = array_merge($def,$field);
+				if(empty($field['type']) && $key == 'id'){
+					$field['type'] = 'hidden';
+				}
 				if(!array_key_exists('label',$field)){
-					$field['label'] = $this->defaultLabel($fieldName);
+					$field['label'] = $this->defaultLabelText($key);
 				}
 				if(!empty($field['type']) && $field['type'] == 'hidden'){
 				}else{
-					$nbColls++
+					$nbColls++;
 				}
+				$opt['fields'][$key] = $field;
 			}
 		}
+		$hiddens = array();
+		$html = '';
+		$html .= $this->labelFor($fieldName, $options);
+		$html .= '<table'.$this->_parseAttributes($opt['table']).'>'."\n";
+		$html .= '	<tr>'."\n";
+		foreach($tmp = $opt['fields'] as $key => $field){
+			if(empty($field['type']) || $field['type'] != 'hidden'){
+				$html .= '		<th>'.$field['label'].'</th>'."\n";
+				$opt['fields'][$key]['label'] = false;
+			}
+		}
+		$html .= '		<th>'.__('Delete',true).'</th>'."\n";
+		$html .= '	</tr>'."\n";
+		for ($i = -1; $i < count($values); $i++) {
+			$model = ($i == -1);
+			$trOpt = $opt['tr'];
+			if($model){
+				$trOpt = Set::merge($trOpt,$opt['model']);
+			}
+			$html .= '	<tr'.$this->_parseAttributes($trOpt,array('fields')).'>'."\n";
+			$index = $i;
+			if($model){
+				$index = "---i---";
+			}
+			foreach($tmp = $opt['fields'] as $key => $field){
+				if(!empty($trOpt['fields'])){
+					$field = array_merge($trOpt['fields'],$field);
+				}
+				if(empty($field['type']) || $field['type'] != 'hidden'){
+					$html .= '		<td'.$this->_parseAttributes($opt['td']).'>'."\n";
+					$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
+					$html .= '		</td>'."\n";
+				}else{
+					$hiddens[$key] = $field;
+				}
+			}
+			$html .= '		<td'.$this->_parseAttributes($opt['tdAction']).'>'."\n";
+			foreach($hiddens as $key => $field){
+				if($key == 'id'){
+					$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.delete',$opt['deleteField'])."\n";
+					$field['spc'] = 'keyInput';
+				}
+				$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
+			}
+			$html .= '			<a href="#" class="btDelete">-</a>'."\n";
+			$html .= '		</td>'."\n";
+			$html .= '	</tr>'."\n";
+		}
+		$html .= '	<tr'.$this->_parseAttributes($opt['trAction']).'>'."\n";
+		$html .= '		<td colspan="'.$nbColls.'"><a href="#" class="btAdd">+</a></td>'."\n";
+		$html .= '	</tr>'."\n";
+		$html .= '</table>'."\n";
 		
-		$html .= '			<table class="subItems" cellspacing="0" cellpadding="0">'."\n";
-		$html .= '				<tr>'."\n";
-		$html .= '					<th>'.__('Code',true).'</th>'."\n";
-		$html .= '					<th>'.__('Label',true).'</th>'."\n";
-		if(count($type['operators'])>1){
-			$html .= '					<th>'.__('Operator',true).'</th>'."\n";
+		if($opt['div'] !== false){
+			$html = '<div'.$this->_parseAttributes($opt['div']).'>'.$html.'</div>';
 		}
-		$html .= '					<th>'.__('Price',true).'</th>'."\n";
-		$html .= '					<th>'.__('Delete',true).'</th>'."\n";
-		$html .= '				</tr>'."\n";
-		$html .= '				<tr>'."\n";
-		$html .= '					<td>'."\n";
-		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.code',array('div'=>false,'label'=>false))."\n";
-		$html .= '					</td>'."\n";
-		$html .= '					<td>'."\n";
-		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.label',array('div'=>false,'label'=>false))."\n";
-		$html .= '					</td>'."\n";
-		if(count($type['operators'])>1){
-			$html .= '					<td>'."\n";
-			$html .= '						'.$this->Form->input('SubProduct.'.$key.'.operator',array('options'=>$type['operators'],'div'=>false,'label'=>false))."\n";
-			$html .= '					</td>'."\n";
-		}
-		$html .= '					<td>'."\n";
-		$html .= '						'.$this->Form->input('SubProduct.'.$key.'.price',array('div'=>false,'label'=>false))."\n";
-		$html .= '					</td>'."\n";
-		$html .= '					<td>'."\n";
-		if(count($type['operators']==1)){
-			$html .= '						'.$this->Form->input('SubProduct.'.$key.'.operator',array('type'=>'hidden','value'=>$type['operators'][0]))."\n";
-		}
-		$html .= '						<a href="#" class="btDelete">-</a>'."\n";
-		$html .= '					</td>'."\n";
-		$html .= '				</tr>'."\n";
-		$html .= '			</table>'."\n";
-		$html .= '		</div>'."\n";
 		
 		return $html;
 	}
 	
-	function defaultLabel($fieldName){
+	function defaultLabelText($fieldName, $options = null){
+		if(!empty($options) && array_key_exists('label',$options) && $options['label'] !== true){
+			return $options['label'];
+		}
 		if (strpos($fieldName, '.') !== false) {
 			$text = array_pop(explode('.', $fieldName));
 		} else {
@@ -207,6 +263,35 @@ class O2formHelper extends AppHelper {
 		
 				
 		return $text;
+	}
+	
+	
+	
+	function labelFor($fieldName, $options){
+		if (empty($options['label']) || $options['label'] !== false) {
+			$label = array();
+			if (!empty($options['label'])){
+				$label = $options['label'];
+			}
+			if (!is_array($label)) {
+				$label = array('text'=>$label);
+			}
+			$labelText = null;
+			if (isset($label['text'])) {
+				$labelText = $label['text'];
+				//unset($label['text']);
+			}
+			return $this->Form->label($fieldName, $labelText, $label);
+		}
+		return null;
+	}
+	
+	
+	function _parseAttributes($options, $exclude = null, $insertBefore = ' ', $insertAfter = null){
+		if(array_key_exists('class',$options) && is_array($options['class'])){
+			$options['class'] = implode(' ',$options['class']);
+		}
+		return parent::_parseAttributes($options, $exclude, $insertBefore, $insertAfter);
 	}
 }
 ?>
