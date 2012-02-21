@@ -217,7 +217,7 @@ class O2formHelper extends AppHelper {
 				}
 				if(empty($field['type']) || $field['type'] != 'hidden'){
 					$html .= '		<td'.$this->_parseAttributes($opt['td']).'>'."\n";
-					$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
+					$html .= '			'.$this->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
 					$html .= '		</td>'."\n";
 				}else{
 					$hiddens[$key] = $field;
@@ -225,11 +225,18 @@ class O2formHelper extends AppHelper {
 			}
 			$html .= '		<td'.$this->_parseAttributes($opt['tdAction']).'>'."\n";
 			foreach($hiddens as $key => $field){
+				if(!empty($trOpt['fields'])){
+					$field = array_merge($trOpt['fields'],$field);
+				}
 				if($key == 'id'){
-					$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.delete',$opt['deleteField'])."\n";
+					$optDelete = $opt['deleteField'];
+					if(!empty($trOpt['fields'])){
+						$optDelete = array_merge($trOpt['fields'],$optDelete);
+					}
+					$html .= '			'.$this->input($fieldName.'.'.$index.'.delete',$optDelete)."\n";
 					$field['spc'] = 'keyInput';
 				}
-				$html .= '			'.$this->Form->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
+				$html .= '			'.$this->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
 			}
 			$html .= '			<a href="#" class="btDelete">-</a>'."\n";
 			$html .= '		</td>'."\n";
@@ -286,11 +293,18 @@ class O2formHelper extends AppHelper {
 		return null;
 	}
 	
-	
-	function _parseAttributes($options, $exclude = null, $insertBefore = ' ', $insertAfter = null){
+	function normalizeAttributesOpt($options, $exclude = null){
 		if(array_key_exists('class',$options) && is_array($options['class'])){
 			$options['class'] = implode(' ',$options['class']);
 		}
+		if(!empty($exclude)){
+			$options = array_diff_key($options,array_flip($exclude));
+		}
+		return $options;
+	}
+	
+	function _parseAttributes($options, $exclude = null, $insertBefore = ' ', $insertAfter = null){
+		$options = $this->normalizeAttributesOpt($options);
 		return parent::_parseAttributes($options, $exclude, $insertBefore, $insertAfter);
 	}
 }

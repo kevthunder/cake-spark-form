@@ -2,7 +2,7 @@
 	$(function(){
 		$('.MultipleTable .btDelete').live('click',function (){
 			$line = $(this).closest('.line');
-			$line.addClass('deletedLine').find('input:not([spc=keyInput],[spc=deleteInput])').attr('disabled',true);
+			multipleDeleteRow($line);
 			return false;
 		});
 		$('.MultipleTable .btAdd').live('click',function (){
@@ -16,5 +16,16 @@
 			$last.after($clone);
 			return false;
 		});
-	})
+		
+		$('.MultipleTable input[spc=deleteInput]').each(function (){
+			if($(this).val() == 1){
+				$line = $(this).closest('.line');
+				multipleDeleteRow($line);
+			}
+		});
+	});
+	window.multipleDeleteRow = function($line){
+		$line.addClass('deletedLine').find('input:not([spc=keyInput],[spc=deleteInput])').attr('disabled',true);
+		$('input[spc=deleteInput]',$line).val(1);
+	};
 })( jQuery );
