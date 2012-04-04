@@ -123,24 +123,13 @@ class O2formHelper extends AppHelper {
 			$options['fields'] = $options;
 		}
 		$defOpt = array(
-			'table'=>array(
-				'class'=>array('MultipleTable'),
-				'cellspacing'=>0,
-				'cellpadding'=>0,
-			),
+			'mode' => 'table',
+			'elem' => null,
+			'elemVars' => array('labels'),
+			'toAttributes' => array('div'),
+			'independantLabels' => false,
 			'div'=>array(
 				'class'=>array('MultipleInput'),
-			),
-			'tr'=>array(
-				'class'=>array('line'),
-			),
-			'trAction'=>array(
-				'class'=>array('actionLine'),
-			),
-			'td'=>array(
-			),
-			'tdAction'=>array(
-				'class'=>array('actionCell'),
 			),
 			'model'=>array(
 				'class'=>array('modelLine'),
@@ -151,9 +140,36 @@ class O2formHelper extends AppHelper {
 				'type' => 'hidden',
 			)
 		);
+		$modeOpt = array(
+			'table' => array(
+				'elem' => 'multiple_table',
+				'elemVars' => array('labels'),
+				'toAttributes' => array('table','td','tdAction','trAction','div'),
+				'independantLabels' => true,
+				'table'=>array(
+					'class'=>array('MultipleTable'),
+					'cellspacing'=>0,
+					'cellpadding'=>0,
+				),
+				'tr'=>array(
+					'class'=>array('line'),
+				),
+				'trAction'=>array(
+					'class'=>array('actionLine'),
+				),
+				'td'=>array(
+				),
+				'tdAction'=>array(
+					'class'=>array('actionCell'),
+				)
+			)
+		);
 		//normalize and count
 		$options['fields'] = Set::normalize($options['fields']);
 		$opt = array_merge($defOpt,$options);
+		if(!empty($opt['mode']) && !empty($modeOpt[$opt['mode']])){
+			$opt = array_merge($defOpt,$modeOpt[$opt['mode']],$options);
+		}
 		$nbColls = 1;
 		
 		$values = current($this->value());
@@ -177,7 +193,7 @@ class O2formHelper extends AppHelper {
 				if(empty($field['type']) && $key == 'id'){
 					$field['type'] = 'hidden';
 				}
-				if(!array_key_exists('label',$field)){
+				if($opt['independantLabels'] && !array_key_exists('label',$field)){
 					$field['label'] = $this->defaultLabelText($key);
 				}
 				if(!empty($field['type']) && $field['type'] == 'hidden'){
@@ -188,25 +204,24 @@ class O2formHelper extends AppHelper {
 			}
 		}
 		$hiddens = array();
-		$html = '';
-		$html .= $this->labelFor($fieldName, $options);
-		$html .= '<table'.$this->_parseAttributes($opt['table']).'>'."\n";
-		$html .= '	<tr>'."\n";
-		foreach($tmp = $opt['fields'] as $key => $field){
-			if(empty($field['type']) || $field['type'] != 'hidden'){
-				$html .= '		<th>'.$field['label'].'</th>'."\n";
-				$opt['fields'][$key]['label'] = false;
+		if($opt['independantLabels']){
+			$labels = array();
+			foreach($tmp = $opt['fields'] as $key => $field){
+				if(empty($field['type']) || $field['type'] != 'hidden'){
+					$labels[] = $field['label'];
+					$opt['fields'][$key]['label'] = false;
+				}
 			}
 		}
-		$html .= '		<th>'.__('Delete',true).'</th>'."\n";
-		$html .= '	</tr>'."\n";
+		$lines = array();
 		for ($i = -1; $i < count($values); $i++) {
+			$line = array();
 			$model = ($i == -1);
 			$trOpt = $opt['tr'];
 			if($model){
 				$trOpt = Set::merge($trOpt,$opt['model']);
 			}
-			$html .= '	<tr'.$this->_parseAttributes($trOpt,array('fields')).'>'."\n";
+			$line['tr'] = $this->_parseAttributes($trOpt,array('fields'));
 			$index = $i;
 			if($model){
 				$index = "---i---";
@@ -216,14 +231,11 @@ class O2formHelper extends AppHelper {
 					$field = array_merge($trOpt['fields'],$field);
 				}
 				if(empty($field['type']) || $field['type'] != 'hidden'){
-					$html .= '		<td'.$this->_parseAttributes($opt['td']).'>'."\n";
-					$html .= '			'.$this->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
-					$html .= '		</td>'."\n";
+					$line['inputs'][$fieldName.'.'.$index.'.'.$key] = $field;
 				}else{
 					$hiddens[$key] = $field;
 				}
 			}
-			$html .= '		<td'.$this->_parseAttributes($opt['tdAction']).'>'."\n";
 			foreach($hiddens as $key => $field){
 				if(!empty($trOpt['fields'])){
 					$field = array_merge($trOpt['fields'],$field);
@@ -233,23 +245,27 @@ class O2formHelper extends AppHelper {
 					if(!empty($trOpt['fields'])){
 						$optDelete = array_merge($trOpt['fields'],$optDelete);
 					}
-					$html .= '			'.$this->input($fieldName.'.'.$index.'.delete',$optDelete)."\n";
+					$line['hidden'][$fieldName.'.'.$index.'.delete'] = $optDelete;
 					$field['spc'] = 'keyInput';
 				}
-				$html .= '			'.$this->input($fieldName.'.'.$index.'.'.$key,$field)."\n";
+				$line['hidden'][$fieldName.'.'.$index.'.'.$key] = $field;
 			}
-			$html .= '			<a href="#" class="btDelete">-</a>'."\n";
-			$html .= '		</td>'."\n";
-			$html .= '	</tr>'."\n";
+			$lines[] = $line;
 		}
-		$html .= '	<tr'.$this->_parseAttributes($opt['trAction']).'>'."\n";
-		$html .= '		<td colspan="'.$nbColls.'"><a href="#" class="btAdd">+</a></td>'."\n";
-		$html .= '	</tr>'."\n";
-		$html .= '</table>'."\n";
 		
-		if($opt['div'] !== false){
-			$html = '<div'.$this->_parseAttributes($opt['div']).'>'.$html.'</div>';
+		$elemsAttr = array();
+		foreach(Set::normalize($opt['toAttributes']) as $key => $val){
+			if(array_key_exists($key,$opt) && $opt[$key] !== false){
+				$elemsAttr[$key] = $this->_parseAttributes($opt[$key]);
+			}else{
+				$elemsAttr[$key] = false;
+			}
 		}
+		
+		$view =& ClassRegistry::getObject('view');
+		$elemOpt = array('plugin'=>'o2form','fieldName'=>$fieldName,'lines'=>$lines,'elemsAttr'=>$elemsAttr,'options'=>$opt);
+		$elemOpt = array_merge($elemOpt,compact($opt['elemVars']));
+		$html = $view->element($opt['elem'],$elemOpt);
 		
 		return $html;
 	}
