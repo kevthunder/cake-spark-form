@@ -3,7 +3,7 @@ class O2formHelper extends AppHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $custom_types = array('paginated_select','multiple');
+	var $custom_types = array('paginated_select','multiple','country','region');
 	 
 	 
 	 
@@ -270,6 +270,151 @@ class O2formHelper extends AppHelper {
 		return $html;
 	}
 	
+	function country($fieldName, $options = array()){
+		$defOpt = array(
+			'options' => true,
+		);
+		$opt = array_merge($defOpt,$options);
+		App::import('Lib', 'O2form.Geography');
+		$countries = Geography::getCountries();
+		if($opt['options'] === true){
+			$opt['options'] = $countries;
+		}else{
+			$selected = Set::normalize($opt['options']);
+			$countries = array_intersect_key($countries,$selected);
+			$countries = array_merge($countries, array_filter($selected));
+			$opt['options'] = $countries;
+		}
+		$opt['type'] = null;
+		return $this->Form->input($fieldName, $opt);
+	}
+	function region($fieldName, $options = array()){
+		$defOpt = array(
+			'countrySelect' => null,
+			'options' => true,
+			'other' => array(
+				'label'=> __('Other',true),
+				'optLabel'=> true,
+				'div'=>array('class'=>'input otherInput text')
+			),
+			'div'=>array('class' => 'input extendedSelect'),
+		);
+		if(!empty($options['countrySelect'])){
+			$defOpt = array_merge($defOpt,array(
+				'empty'=>array(
+					'div'=>array('class' => 'input extendedSelectCase extendedSelectEmpty select'),
+				),
+				'cases'=>array(
+					'div'=>array('class' => 'input extendedSelectCase select','style'=>'display:none'),
+					'disabled' => 'disabled',
+				),
+				'more'=>array(
+					'div'=>array('class' => 'input extendedSelectCase extendedSelectMore text','style'=>'display:none'),
+					'disabled' => 'disabled',
+				),
+			));
+		}else{
+			$defOpt = array_merge($defOpt,array(
+				'div'=>array('class' => 'input extendedSelect select'),
+			));
+		}
+		$opt = array_merge($defOpt,$options);
+		$loadScript = false;
+		$out = null;
+		App::import('Lib', 'O2form.Geography');
+		$regions = array();
+		$needMore = false;
+		if($opt['options'] === true){
+			$selected = Geography::getCountries(array_keys($regions));
+		}else{
+			$selected = Set::normalize($opt['options']);
+		}
+		$opt['options'] = array();
+		foreach($selected as $key => $country){
+			if(!empty($country) && is_string($country)){
+				$label = $country;
+			}elseif(is_array($country) && !empty($country['label'])){
+				$label = $country['label'];
+			}else{
+				$label = Geography::getCountry($key);
+			}
+			$cregions = Geography::getRegions($key);
+			if(is_array($country) && !empty($country['regions']) && !is_array($country['regions'])){
+				$selected = Set::normalize($country['regions']);
+				$cregions = array_intersect_key($selected,$selected);
+			}
+			if(!empty($cregions)){
+				$regions[]= array(
+					'label' => Geography::getLocalTerm('region',$key),
+					'rel' => $key,
+					'options' => $cregions,
+				);
+				$opt['options'][$label] = $cregions;
+			}else{
+				$needMore = true;
+			}
+		}
+		if(!$needMore){
+			$opt['more'] = false;
+		}
+		$allOpt = $opt['options'];
+		if($opt['other']){
+			$loadScript = true;
+			if($opt['other'] === true){
+				$opt['other'] = array();
+			}elseif(!is_array($opt['other'])){
+				$opt['other'] = array('label'=>$opt['other']);
+			}
+			$opt['other'] = array_merge($defOpt['other'],$opt['other']);
+			if($opt['other']['optLabel'] === true){
+				$opt['other']['optLabel'] = $opt['other']['label'];
+			}
+			$allOpt['other'] = $opt['other']['optLabel'];
+		}
+		
+		
+		if(empty($opt['countrySelect'])){
+			$opt['options'] = $allOpt;
+			$opt['type'] = null;
+			if($opt['other']){
+				$opt['after'] = $this->Form->input($fieldName.'_other', $opt['other']);
+			}
+			$out = $this->Form->input($fieldName, $opt);
+		}else{
+			if(preg_match('/[_a-z0-9]/i',$opt['countrySelect'])){
+				$opt['countrySelect'] = '#'.$this->Form->domId($opt['countrySelect']);
+				$this->setEntity($fieldName);
+			}
+			$loadScript = true;
+			$out = '';
+			if($opt['empty']){
+				$opt['empty'] = array_merge($defOpt['empty'],(array)$opt['empty']);
+				$opt['empty']['options'] = $allOpt;
+				$out .= $this->Form->input($fieldName, $opt['empty']);
+			}
+			foreach($regions as $region){
+				$caseOpt = array_merge($opt['cases'],$region);
+				$caseOpt['div']['rel'] = $region['rel'];
+				unset($caseOpt['rel']);
+				$out .= $this->Form->input($fieldName, $caseOpt);
+			}
+			if($opt['more']){
+				$opt['more'] = array_merge($defOpt['more'],(array)$opt['more']);
+				$out .= $this->Form->input($fieldName, $opt['more']);
+			}
+			if($opt['div']){
+				$opt['div']['linked'] = $opt['countrySelect'];
+				$out = '<div'.$this->_parseAttributes($opt['div']).'>'.$out.'</div>';
+			}
+		}
+		
+		
+		if($loadScript){
+			$this->Html->script('/o2form/js/region_select',array('inline'=>false));
+		}
+		return $out;
+	}
+	
 	function defaultLabelText($fieldName, $options = null){
 		if(!empty($options) && array_key_exists('label',$options) && $options['label'] !== true){
 			return $options['label'];
@@ -284,7 +429,6 @@ class O2formHelper extends AppHelper {
 		}
 		$text = __(Inflector::humanize(Inflector::underscore($text)), true);
 		
-				
 		return $text;
 	}
 	
