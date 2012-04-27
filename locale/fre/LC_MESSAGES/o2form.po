@@ -21,6 +21,9 @@ msgstr ""
 msgid ""
 msgstr ""
 
+msgid "State"
+msgstr "État"
+
 msgid "Alberta"
 msgstr "Alberta"
 
