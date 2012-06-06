@@ -3,7 +3,9 @@ class O2formHelper extends AppHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $custom_types = array('paginated_select','multiple','country','region');
+	var $customTypes = array('paginated_select','multiple','country','region');
+	
+	var $preprocessors = array('null_checkbox');
 	 
 	 
 	 
@@ -22,12 +24,73 @@ class O2formHelper extends AppHelper {
 	function input($fieldName, $options = array() ){
 		$this->setEntity($fieldName);
 		$out = '';
+		$preprocessors = Configure::read('O2form.preprocessors');
+		$preprocessors = array_merge($this->preprocessors, (array)$preprocessors);
+		foreach($preprocessors as $objName => $processors){
+			$obj =& $this->_getHelper($objName);
+			if($obj && is_object($obj)){
+				if(!is_array($processors)){
+					$processors = array($processors);
+				}
+				foreach($processors as $processor){
+					if(method_exists($obj,$processor)){
+						$res = $obj->{$processor}($fieldName, $options);
+						if(is_array($res)){
+							$options = $res;
+						}elseif($res === false){
+							return null;
+						}
+					}
+				}
+			}
+		}
+		$customTypes = Configure::read('O2form.customTypes');
+		$customTypes = array_merge($this->customTypes, (array)$customTypes);
+		$customTypes = array_flip(Set::flatten($customTypes,'>'));
+		if(!empty($options['type']) && isset($customTypes[$options['type']])){
+			$objName = $customTypes[$options['type']];
+			$objName = explode($objName, '>', 2);
+			$objName = $objName[0];
+			$obj =& $this->_getHelper($objName);
+			if($obj && is_object($obj) && method_exists($obj,$options['type'])){
+				$out .= $obj->{$options['type']}($fieldName, $options);
+			}
+		}else{
+			$out .= $this->Form->input($fieldName, $options);
+		}
+		return $out;
+	}
+	
+	function _getHelper($objName){
+		$obj = null;
+		if(is_numeric($objName)){
+			$obj =& $this;
+		}else{
+			$objFullName = $objName;
+			$plugin = false;
+			$split = explode($objName,'.',2);
+			if(count($split)>1){
+				$plugin = $split[0];
+				$objName = $split[1];
+			}
+			$view =& ClassRegistry::getObject('view');
+			if(!empty($view->{$objName})){
+				$obj =& $view->{$objName};
+			}
+		}
+		return $obj;
+	}
+	
+	function null_checkbox($fieldName, $options = array()){
 		if(isset($options['null_checkbox']) && $options['null_checkbox']!==false){
 			$this->setEntity($fieldName);
 			//$this->Javascript->link('jquery-1.3.2.min', false); 
 			$this->Javascript->link('/o2form/js/o2form', null, array('inline'=>false)); 
 			
-			$out .= $this->Form->hidden($fieldName,array('value'=>''))."\n";
+			if(!isset($options['before'])){
+				$options['before'] = '';
+			}
+			$options['before'] = $this->Form->hidden($fieldName,array('value'=>''))."\n".$options['before'];
 			if($options['null_checkbox']!==true){
 				$label = $options['null_checkbox'];
 			}else{
@@ -46,12 +109,7 @@ class O2formHelper extends AppHelper {
 			}
 			$options['after'] .= $this->Form->input($fieldName.'_null',array('type'=>'checkbox','label'=>$label,'div'=>array('class'=>'disable_checkbox_div clearfix'),'class'=>'disable_checkbox','checked'=>$checked));
 		}
-		if(!empty($options['type']) && in_array($options['type'],$this->custom_types)){
-			$out .= $this->{$options['type']}($fieldName, $options);
-		}else{
-			$out .= $this->Form->input($fieldName, $options);
-		}
-		return $out;
+		return $options;
 	}
 	
 	function paginated_select($fieldName, $options = array() ){
