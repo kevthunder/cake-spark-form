@@ -3,7 +3,7 @@ class O2formHelper extends AppHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $customTypes = array('paginated_select','multiple','country','region');
+	var $customTypes = array('paginated_select','multiple','country','region','datepicker');
 	
 	var $preprocessors = array('null_checkbox');
 	 
@@ -49,7 +49,7 @@ class O2formHelper extends AppHelper {
 		$customTypes = array_flip(Set::flatten($customTypes,'>'));
 		if(!empty($options['type']) && isset($customTypes[$options['type']])){
 			$objName = $customTypes[$options['type']];
-			$objName = explode($objName, '>', 2);
+			$objName = explode('>', $objName, 2);
 			$objName = $objName[0];
 			$obj =& $this->_getHelper($objName);
 			if($obj && is_object($obj) && method_exists($obj,$options['type'])){
@@ -328,6 +328,49 @@ class O2formHelper extends AppHelper {
 		return $html;
 	}
 	
+	function datepicker($fieldName, $options = array()){
+		$html = '';
+		$html .= $this->loadAsset('jquery-ui','css');
+		$html .= $this->loadAsset('jquery-ui','js');
+		$html .= $this->loadAsset('datepickerDef');
+		$pickerOpt = array(
+			'changeMonth' => true,
+			'changeYear' => true,
+			'dateFormat' => 'yy-mm-dd',
+		);
+		$toPicker = array('changeMonth','changeYear','defaultDate','firstDay','maxDate','minDate','yearRange','dateFormat');
+		$pickerOpt = array_merge($pickerOpt,array_intersect_key($options,array_flip($toPicker)));
+		$options = array_diff_key($options,array_flip($toPicker));
+		if(!empty($options['jsOpt'])){
+			$pickerOpt = array_merge($pickerOpt,$options['jsOpt']);
+			unset($options['jsOpt']);
+		}
+		$this->Html->scriptBlock('
+			(function( $ ) {
+				$(function(){
+					$("#'.$this->Form->domId($fieldName).'").datepicker('.json_encode($pickerOpt).');
+				})
+			})( jQuery );
+			
+		',array('inline'=>false));
+		$options['type'] = 'text';
+		$val = $this->value($options);
+		$val = $val['value'];
+		if(!empty($val)){
+			$time = strtotime($val);
+			if($time){
+				$options['value'] = date('Y-m-d',$time);
+			}else{
+				$options['value'] = '';
+			}
+		}
+		if(!array_key_exists('div',$options) || ($options['div'] !== false && !array_key_exists('class',$options['div']))){
+			$options['div']['class'] = 'input text datepicker';
+		}
+		$html .= $this->Form->input($fieldName, $options);
+		return $html;
+	}
+	
 	function country($fieldName, $options = array()){
 		$defOpt = array(
 			'options' => true,
@@ -525,5 +568,67 @@ class O2formHelper extends AppHelper {
 		$options = $this->normalizeAttributesOpt($options);
 		return parent::_parseAttributes($options, $exclude, $insertBefore, $insertAfter);
 	}
+	
+	function loadAsset($alias,$type='js',$inline = false,$default=null){
+		static $loaded = array();
+		if(empty($loaded[$type][$alias])){
+			if(method_exists($this,'_'.$alias.'Asset')){
+				$loaded[$type][$alias] = 1;
+				$res = $this->{'_'.$alias.'Asset'}($inline);
+				return $res;
+			}
+			$url = $default;
+			$res = '';
+			App::import('Lib', 'O2form.O2formConfig');
+			$conf = O2formConfig::load('load'.ucfirst($type).'.'.$alias);
+			if($conf){
+				$url = $conf;
+			}
+			if($url){
+				$loaded[$type][$alias] = 1;
+				if(method_exists($this,'_'.$type.'Asset')){
+					$res = $this->{'_'.$type.'Asset'}($url,$inline);
+				}
+				return $res;
+			}
+		}
+		return '';
+	}
+	
+	function _jsAsset($url,$inline){
+		$res = $this->Html->script($url,array('inline'=>$inline));
+		if($inline){
+			return $res;
+		}
+	}
+	function _cssAsset($url,$inline){
+		$res = $this->Html->css($url,null,array('inline'=>$inline));
+		if($inline){
+			return $res;
+		}
+	}
+	function _datepickerDefAsset($inline){
+		$pickerOpt = array(
+			'currentText' => __('Today',true),
+			'closeText' => __('Done',true),
+			'dayNames' => array(__("Sunday",true), __("Monday",true), __("Tuesday",true), __("Wednesday",true), __("Thursday",true), __("Friday",true), __("Saturday",true)),
+			'dayNamesMin' => array(__("Su",true), __("Mo",true), __("Tu",true), __("We",true), __("Th",true), __("Fr",true), __("Sa",true)),
+			'dayNamesShort' => array(__("Sun",true), __("Mon",true), __("Tue",true), __("Wed",true), __("Thu",true), __("Fri",true), __("Sat",true)),
+			'monthNames' => array(__("January",true), __("February",true), __("March",true), __("April",true), __("May",true), __("June",true), __("July",true), __("August",true), __("September",true), __("October",true), __("November",true), __("December",true)),
+			'monthNamesShort' => array(__("Jan",true), __("Feb",true), __("Mar",true), __("Apr",true), __("May",true), __("Jun",true), __("Jul",true), __("Aug",true), __("Sep",true), __("Oct",true), __("Nov",true), __("Dec",true)),
+			'nextText' => __('Next',true),
+			'prevText' => __('Prev',true),
+		);
+		$res = $this->Html->scriptBlock('
+			(function( $ ) {
+				$.datepicker.setDefaults( '.json_encode($pickerOpt).' );
+			})( jQuery );
+		',array('inline'=>$inline));
+		
+		if($inline){
+			return $res;
+		}
+	}
+	
 }
 ?>
