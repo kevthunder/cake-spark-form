@@ -178,7 +178,12 @@ class O2formHelper extends AppHelper {
 		$this->Html->script('/o2form/js/multiple',array('inline'=>false));
 		$this->Html->css('/o2form/css/multiple',null,array('inline'=>false));
 		if(!array_key_exists('fields',$options)){
-			$options['fields'] = $options;
+			if(empty($options['type']) || $options['type'] != 'multiple'){
+				$options['fields'] = $options;
+			}else{
+				$options['fields'] = array('val'=>array());
+			}
+			
 		}
 		$defOpt = array(
 			'mode' => 'table',
@@ -196,7 +201,11 @@ class O2formHelper extends AppHelper {
 			'deleteField'=>array(
 				'spc' => 'deleteInput',
 				'type' => 'hidden',
-			)
+			),
+			'minRows' => 0, 
+			'addLabel' => '+',
+			'deleteLabel' => '-',
+			'deleteColLabel' => __('Delete',true),
 		);
 		$modeOpt = array(
 			'table' => array(
@@ -230,6 +239,7 @@ class O2formHelper extends AppHelper {
 		}
 		$nbColls = 1;
 		
+		$this->setEntity($fieldName);
 		$values = current($this->value());
 		if(empty($values)){
 			$values = array();
@@ -272,7 +282,9 @@ class O2formHelper extends AppHelper {
 			}
 		}
 		$lines = array();
-		for ($i = -1; $i < count($values); $i++) {
+		$nbRow = count($values);
+		$nbRow = max($nbRow,$opt['minRows']);
+		for ($i = -1; $i < $nbRow; $i++) {
 			$line = array();
 			$model = ($i == -1);
 			$trOpt = $opt['tr'];
@@ -289,7 +301,7 @@ class O2formHelper extends AppHelper {
 					$field = array_merge($trOpt['fields'],$field);
 				}
 				if(empty($field['type']) || $field['type'] != 'hidden'){
-					$line['inputs'][$fieldName.'.'.$index.'.'.$key] = $field;
+					$line['inputs'][$this->model().'.'.$this->field().'.'.$index.'.'.$key] = $field;
 				}else{
 					$hiddens[$key] = $field;
 				}
