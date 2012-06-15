@@ -124,48 +124,92 @@ class O2formHelper extends AppHelper {
 			return $this->Form->input($fieldName, $options);
 		}
 		
+		
+		$opt = $this->Form->_initInputField($fieldName, $options);
+		unset($opt['div']);
 		$legend = false;
-		if (isset($options['legend'])) {
-			$legend = $options['legend'];
-			unset($options['legend']);
+
+		if (isset($opt['legend'])) {
+			$legend = $opt['legend'];
+			unset($opt['legend']);
 		} elseif (count($options['options']) > 1) {
 			$legend = __(Inflector::humanize($this->field()), true);
 		}
-		
-		
-		$inbetween = null;
-		if (isset($options['separator'])) {
-			$inbetween = $options['separator'];
-			unset($options['separator']);
+		$label = true;
+
+		if (isset($opt['label'])) {
+			$label = $opt['label'];
+			unset($opt['label']);
 		}
-		
-		
-		$hiddenField = isset($options['hiddenField']) ? $options['hiddenField'] : true;
-		unset($options['hiddenField']);
-		
+		$inbetween = null;
+
+		if (isset($opt['separator'])) {
+			$inbetween = $opt['separator'];
+			unset($opt['separator']);
+		}
+
+		if (isset($opt['value'])) {
+			$value = $opt['value'];
+		} else {
+			$value =  $this->value($fieldName);
+		}
 		$out = array();
-		$i = 0;
+
+		$hiddenField = isset($opt['hiddenField']) ? $opt['hiddenField'] : true;
+		unset($opt['hiddenField']);
+
 		foreach ($options['options'] as $optValue => $optConf) {
-			$optionsHere = array('legend' => false, 'div'=>false, 'hiddenField'=> ($i==0)?$hiddenField:false);
+			$optionsHere = array('value' => $optValue);
 			if(!is_array($optConf)){
 				$optConf = array('label'=>$optConf);
 			}
-			$optionsHere['options'] = array($optValue=>$optConf['label']);
-			unset($optConf['label']);
-			$optionsHere = array_merge($options,$optConf,$optionsHere);
-			$out[] = $this->Form->input($fieldName, $optionsHere);
-			$i++;
+			if(!is_array($optConf['label'])){
+				$optConf['label'] = array('text'=>$optConf['label']);
+			}
 			
+			if (isset($value) && $optValue == $value) {
+				$optionsHere['checked'] = 'checked';
+			}
+			$parsedOptions = $this->_parseAttributes(
+				array_merge($opt,$optConf,$optionsHere),
+				array('name', 'type', 'id', 'label'), '', ' '
+			);
+			if(empty($optConf['id'])){
+				$tagName = Inflector::camelize(
+					$opt['id'] . '_' . Inflector::underscore($optValue)
+				);
+			}else{
+				$tagName = $optConf['id'];
+			}
+
+			$optTitle = $optConf['label']['text'];
+			if ($label) {
+				$titleAttr = $this->_parseAttributes($optConf['label'],array('text','for'));
+				$optTitle =  sprintf($this->Html->tags['label'], $tagName, $titleAttr, $optConf['label']['text']);
+			}
+			$out[] =  sprintf(
+				$this->Html->tags['radio'], $opt['name'],
+				$tagName, $parsedOptions, $optTitle
+			);
 		}
-		
-		$out = implode($inbetween, $out);
-		
+		$hidden = null;
+
+		if ($hiddenField) {
+			if (!isset($value) || $value === '') {
+				$hidden = $this->Form->hidden($fieldName, array(
+					'id' => $opt['id'] . '_', 'value' => '', 'name' => $opt['name']
+				));
+			}
+		}
+		$out = $hidden . implode($inbetween, $out);
+
 		if ($legend) {
 			$out = sprintf(
 				$this->Html->tags['fieldset'], '',
 				sprintf($this->Html->tags['legend'], $legend) . $out
 			);
 		}
+		
 		
 		$out = $this->_divWrapper($fieldName, $out ,$options);
 		
