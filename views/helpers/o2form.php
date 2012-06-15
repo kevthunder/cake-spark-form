@@ -3,7 +3,7 @@ class O2formHelper extends AppHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $customTypes = array('paginated_select','multiple','country','region','datepicker');
+	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio');
 	
 	var $preprocessors = array('null_checkbox');
 	 
@@ -111,6 +111,67 @@ class O2formHelper extends AppHelper {
 		}
 		return $options;
 	}
+	
+	function radio($fieldName, $options = array() ){
+		$extend = false;
+		if(!empty($options['options'])){
+			$extendedOpt = array_filter($options['options'],'is_array');
+			if(count($extendedOpt)){
+				$extend = true;
+			}
+		}
+		if(!$extend){
+			return $this->Form->input($fieldName, $options);
+		}
+		
+		$legend = false;
+		if (isset($options['legend'])) {
+			$legend = $options['legend'];
+			unset($options['legend']);
+		} elseif (count($options['options']) > 1) {
+			$legend = __(Inflector::humanize($this->field()), true);
+		}
+		
+		
+		$inbetween = null;
+		if (isset($options['separator'])) {
+			$inbetween = $options['separator'];
+			unset($options['separator']);
+		}
+		
+		
+		$hiddenField = isset($options['hiddenField']) ? $options['hiddenField'] : true;
+		unset($options['hiddenField']);
+		
+		$out = array();
+		$i = 0;
+		foreach ($options['options'] as $optValue => $optConf) {
+			$optionsHere = array('legend' => false, 'div'=>false, 'hiddenField'=> ($i==0)?$hiddenField:false);
+			if(!is_array($optConf)){
+				$optConf = array('label'=>$optConf);
+			}
+			$optionsHere['options'] = array($optValue=>$optConf['label']);
+			unset($optConf['label']);
+			$optionsHere = array_merge($options,$optConf,$optionsHere);
+			$out[] = $this->Form->input($fieldName, $optionsHere);
+			$i++;
+			
+		}
+		
+		$out = implode($inbetween, $out);
+		
+		if ($legend) {
+			$out = sprintf(
+				$this->Html->tags['fieldset'], '',
+				sprintf($this->Html->tags['legend'], $legend) . $out
+			);
+		}
+		
+		$out = $this->_divWrapper($fieldName, $out ,$options);
+		
+		return $out;
+	}
+	
 	
 	function paginated_select($fieldName, $options = array() ){
 		$view =& ClassRegistry::getObject('view');
@@ -576,6 +637,37 @@ class O2formHelper extends AppHelper {
 		return $options;
 	}
 	
+	function _divWrapper($fieldName, $output ,$options = array() ){
+		$divOptions = array();
+		$div = $this->Form->_extractOption('div', $options, true);
+		$modelKey = $this->model();
+		if (!empty($div)) {
+			$divOptions['class'] = 'input';
+			$divOptions = $this->addClass($divOptions, $options['type']);
+			if (is_string($div)) {
+				$divOptions['class'] = $div;
+			} elseif (is_array($div)) {
+				$divOptions = array_merge($divOptions, $div);
+			}
+			if (
+				isset($this->fieldset[$modelKey]) &&
+				in_array($fieldKey, $this->fieldset[$modelKey]['validates'])
+			) {
+				$divOptions = $this->addClass($divOptions, 'required');
+			}
+			if (!isset($divOptions['tag'])) {
+				$divOptions['tag'] = 'div';
+			}
+		}
+		
+		
+		if (!empty($divOptions['tag'])) {
+			$tag = $divOptions['tag'];
+			unset($divOptions['tag']);
+			$output = $this->Html->tag($tag, $output, $divOptions);
+		}
+		return $output;
+	}
 	function _parseAttributes($options, $exclude = null, $insertBefore = ' ', $insertAfter = null){
 		$options = $this->normalizeAttributesOpt($options);
 		return parent::_parseAttributes($options, $exclude, $insertBefore, $insertAfter);
