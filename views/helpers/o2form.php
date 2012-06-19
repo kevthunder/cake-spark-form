@@ -5,8 +5,9 @@ class O2formHelper extends AppHelper {
 	
 	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio');
 	
-	var $preprocessors = array('null_checkbox');
-	 
+	var $preprocessors = array('null_checkbox','label_aposition');
+	
+	var $preprocConflicts = array('region'=>array('label_aposition'));
 	 
 	 
 /**
@@ -33,7 +34,9 @@ class O2formHelper extends AppHelper {
 					$processors = array($processors);
 				}
 				foreach($processors as $processor){
-					if(method_exists($obj,$processor)){
+					if(method_exists($obj,$processor) && 
+						(empty($options['type']) || empty($this->preprocConflicts[$options['type']]) || !in_array($processor,$this->preprocConflicts[$options['type']]))
+					){
 						$res = $obj->{$processor}($fieldName, $options);
 						if(is_array($res)){
 							$options = $res;
@@ -61,25 +64,7 @@ class O2formHelper extends AppHelper {
 		return $out;
 	}
 	
-	function _getHelper($objName){
-		$obj = null;
-		if(is_numeric($objName)){
-			$obj =& $this;
-		}else{
-			$objFullName = $objName;
-			$plugin = false;
-			$split = explode($objName,'.',2);
-			if(count($split)>1){
-				$plugin = $split[0];
-				$objName = $split[1];
-			}
-			$view =& ClassRegistry::getObject('view');
-			if(!empty($view->{$objName})){
-				$obj =& $view->{$objName};
-			}
-		}
-		return $obj;
-	}
+	////////////////////////// Preprocessors //////////////////////////
 	
 	function null_checkbox($fieldName, $options = array()){
 		if(isset($options['null_checkbox']) && $options['null_checkbox']!==false){
@@ -111,6 +96,27 @@ class O2formHelper extends AppHelper {
 		}
 		return $options;
 	}
+	
+	function label_aposition($fieldName, $options = array()){
+		if(!empty($options['label']) && is_array($options['label'])){
+			if(!isset($options['label']['text'])){
+				$options['label']['text'] = $this->defaultLabelText($fieldName, $options);
+			}
+			if(!empty($options['label']['text'])){
+				if(!empty($options['label']['prefix'])){
+					$options['label']['text'] = $options['label']['prefix'].$options['label']['text'];
+				}
+				if(!empty($options['label']['suffix'])){
+					$options['label']['text'] .= $options['label']['suffix'];
+				}
+			}
+			unset($options['label']['suffix']);
+			unset($options['label']['prefix']);
+		}
+		return $options;
+	}
+	
+	////////////////////////// Custom Types //////////////////////////
 	
 	function radio($fieldName, $options = array() ){
 		$extend = false;
@@ -563,7 +569,7 @@ class O2formHelper extends AppHelper {
 			}
 			if(!empty($cregions)){
 				$regions[]= array(
-					'label' => Geography::getLocalTerm('region',$key),
+					'label' => array('text'=>Geography::getLocalTerm('region',$key)),
 					'rel' => $key,
 					'options' => $cregions,
 				);
@@ -589,7 +595,8 @@ class O2formHelper extends AppHelper {
 			}
 			$allOpt['other'] = $opt['other']['optLabel'];
 		}
-		
+		$localOpt = array('countrySelect', 'options', 'other', 'empty', 'cases', 'more', 'type');
+		$fowardOpt = array_diff_key($options,array_flip($localOpt));
 		
 		if(empty($opt['countrySelect'])){
 			$opt['options'] = $allOpt;
@@ -597,7 +604,7 @@ class O2formHelper extends AppHelper {
 			if($opt['other']){
 				$opt['after'] = $this->Form->input($fieldName.'_other', $opt['other']);
 			}
-			$out = $this->Form->input($fieldName, $opt);
+			$out = $this->input($fieldName, $opt);
 		}else{
 			if(preg_match('/[_a-z0-9]/i',$opt['countrySelect'])){
 				$opt['countrySelect'] = '#'.$this->Form->domId($opt['countrySelect']);
@@ -611,10 +618,11 @@ class O2formHelper extends AppHelper {
 				$out .= $this->Form->input($fieldName, $opt['empty']);
 			}
 			foreach($regions as $region){
-				$caseOpt = array_merge($opt['cases'],$region);
+				$caseOpt = Set::merge($opt['cases'],$region,$fowardOpt);
 				$caseOpt['div']['rel'] = $region['rel'];
 				unset($caseOpt['rel']);
-				$out .= $this->Form->input($fieldName, $caseOpt);
+				//debug($caseOpt);
+				$out .= $this->input($fieldName, $caseOpt);
 			}
 			if($opt['more']){
 				$opt['more'] = array_merge($defOpt['more'],(array)$opt['more']);
@@ -633,9 +641,17 @@ class O2formHelper extends AppHelper {
 		return $out;
 	}
 	
+	
+	////////////////////////// Other functions //////////////////////////
+	
+	
 	function defaultLabelText($fieldName, $options = null){
 		if(!empty($options) && array_key_exists('label',$options) && $options['label'] !== true){
-			return $options['label'];
+			if(!is_array($options['label'])){
+				return $options['label'];
+			}elseif(array_key_exists('text',$options['label'])){
+				return $options['label']['text'];
+			}
 		}
 		if (strpos($fieldName, '.') !== false) {
 			$text = array_pop(explode('.', $fieldName));
@@ -679,6 +695,27 @@ class O2formHelper extends AppHelper {
 			$options = array_diff_key($options,array_flip($exclude));
 		}
 		return $options;
+	}
+	
+	
+	function _getHelper($objName){
+		$obj = null;
+		if(is_numeric($objName)){
+			$obj =& $this;
+		}else{
+			$objFullName = $objName;
+			$plugin = false;
+			$split = explode($objName,'.',2);
+			if(count($split)>1){
+				$plugin = $split[0];
+				$objName = $split[1];
+			}
+			$view =& ClassRegistry::getObject('view');
+			if(!empty($view->{$objName})){
+				$obj =& $view->{$objName};
+			}
+		}
+		return $obj;
 	}
 	
 	function _divWrapper($fieldName, $output ,$options = array() ){
