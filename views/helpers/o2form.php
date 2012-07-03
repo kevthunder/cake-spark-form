@@ -1,5 +1,5 @@
 <?php
-class O2formHelper extends AppHelper {
+class O2formHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
@@ -59,7 +59,7 @@ class O2formHelper extends AppHelper {
 				$out .= $obj->{$options['type']}($fieldName, $options);
 			}
 		}else{
-			$out .= $this->Form->input($fieldName, $options);
+			$out .= parent::input($fieldName, $options);
 		}
 		return $out;
 	}
@@ -75,7 +75,7 @@ class O2formHelper extends AppHelper {
 			if(!isset($options['before'])){
 				$options['before'] = '';
 			}
-			$options['before'] = $this->Form->hidden($fieldName,array('value'=>''))."\n".$options['before'];
+			$options['before'] = $this->hidden($fieldName,array('value'=>''))."\n".$options['before'];
 			if($options['null_checkbox']!==true){
 				$label = $options['null_checkbox'];
 			}else{
@@ -92,7 +92,7 @@ class O2formHelper extends AppHelper {
 					$checked = true;
 				}
 			}
-			$options['after'] .= $this->Form->input($fieldName.'_null',array('type'=>'checkbox','label'=>$label,'div'=>array('class'=>'disable_checkbox_div clearfix'),'class'=>'disable_checkbox','checked'=>$checked));
+			$options['after'] .= $this->input($fieldName.'_null',array('type'=>'checkbox','label'=>$label,'div'=>array('class'=>'disable_checkbox_div clearfix'),'class'=>'disable_checkbox','checked'=>$checked));
 		}
 		return $options;
 	}
@@ -131,7 +131,7 @@ class O2formHelper extends AppHelper {
 		}
 		
 		
-		$opt = $this->Form->_initInputField($fieldName, $options);
+		$opt = $this->_initInputField($fieldName, $options);
 		unset($opt['div']);
 		$legend = false;
 
@@ -202,7 +202,7 @@ class O2formHelper extends AppHelper {
 
 		if ($hiddenField) {
 			if (!isset($value) || $value === '') {
-				$hidden = $this->Form->hidden($fieldName, array(
+				$hidden = $this->hidden($fieldName, array(
 					'id' => $opt['id'] . '_', 'value' => '', 'name' => $opt['name']
 				));
 			}
@@ -220,6 +220,13 @@ class O2formHelper extends AppHelper {
 		$out = $this->_divWrapper($fieldName, $out ,$options);
 		
 		return $out;
+	}
+	
+	function select($fieldName, $options = array(), $selected = null, $attributes = array()) {
+		if (isset($attributes) && array_key_exists('multiple', $attributes) && $attributes['multiple'] === false) {
+			unset($attributes['multiple']);
+		}
+		return parent::select($fieldName, $options, $selected, $attributes);
 	}
 	
 	
@@ -265,7 +272,7 @@ class O2formHelper extends AppHelper {
 		);
 		$options = array_merge($default_option,$options);
 		$selected_ids = array();
-		$options = $this->Form->__name($options,$fieldName);
+		$options = $this->__name($options,$fieldName);
 		if($options['provider'] == 'default'){
 			$options['provider'] = array(
 					'plugin'=>'o2form',
@@ -302,6 +309,7 @@ class O2formHelper extends AppHelper {
 			'elemVars' => array('labels'),
 			'toAttributes' => array('div'),
 			'independantLabels' => false,
+			'colClass' => true,
 			'div'=>array(
 				'class'=>array('MultipleInput'),
 			),
@@ -328,6 +336,7 @@ class O2formHelper extends AppHelper {
 					'class'=>array('MultipleTable'),
 					'cellspacing'=>0,
 					'cellpadding'=>0,
+					'id'=>$this->domId($fieldName),
 				),
 				'tr'=>array(
 					'class'=>array('line'),
@@ -351,6 +360,12 @@ class O2formHelper extends AppHelper {
 		$nbColls = 1;
 		
 		$this->setEntity($fieldName);
+		
+		$fullFieldName = $fieldName;
+		if(substr($fullFieldName,0,strlen($this->model())+1) != $this->model().'.'){
+			$fullFieldName = $this->model().'.'.$fullFieldName;
+		}
+		
 		$values = current($this->value());
 		if(empty($values)){
 			$values = array();
@@ -375,6 +390,15 @@ class O2formHelper extends AppHelper {
 				if($opt['independantLabels'] && !array_key_exists('label',$field)){
 					$field['label'] = $this->defaultLabelText($key);
 				}
+				
+				if(!empty($field['class'])){
+					$field['class'] = (array)$field['class'];
+				}
+				if($opt['colClass']){
+					$field['class'][] = $this->domId($fullFieldName.'.'.$key);
+				}
+				$field['class'] = implode(' ',$field['class']);
+				
 				if(!empty($field['type']) && $field['type'] == 'hidden'){
 				}else{
 					$nbColls++;
@@ -412,7 +436,12 @@ class O2formHelper extends AppHelper {
 					$field = array_merge($trOpt['fields'],$field);
 				}
 				if(empty($field['type']) || $field['type'] != 'hidden'){
-					$line['inputs'][$this->model().'.'.$this->field().'.'.$index.'.'.$key] = $field;
+					if($key != '__val__'){
+						$subFieldName = $fullFieldName.'.'.$index.'.'.$key;
+					}else{
+						$subFieldName = $fullFieldName.'.'.$index;
+					}
+					$line['inputs'][$subFieldName] = $field;
 				}else{
 					$hiddens[$key] = $field;
 				}
@@ -471,7 +500,7 @@ class O2formHelper extends AppHelper {
 		$this->Html->scriptBlock('
 			(function( $ ) {
 				$(function(){
-					$("#'.$this->Form->domId($fieldName).'").datepicker('.json_encode($pickerOpt).');
+					$("#'.$this->domId($fieldName).'").datepicker('.json_encode($pickerOpt).');
 				})
 			})( jQuery );
 			
@@ -490,7 +519,7 @@ class O2formHelper extends AppHelper {
 		if(!array_key_exists('div',$options) || ($options['div'] !== false && !array_key_exists('class',$options['div']))){
 			$options['div']['class'] = 'input text datepicker';
 		}
-		$html .= $this->Form->input($fieldName, $options);
+		$html .= $this->input($fieldName, $options);
 		return $html;
 	}
 	
@@ -510,7 +539,7 @@ class O2formHelper extends AppHelper {
 			$opt['options'] = $countries;
 		}
 		$opt['type'] = null;
-		return $this->Form->input($fieldName, $opt);
+		return $this->input($fieldName, $opt);
 	}
 	function region($fieldName, $options = array()){
 		$defOpt = array(
@@ -602,12 +631,12 @@ class O2formHelper extends AppHelper {
 			$opt['options'] = $allOpt;
 			$opt['type'] = null;
 			if($opt['other']){
-				$opt['after'] = $this->Form->input($fieldName.'_other', $opt['other']);
+				$opt['after'] = $this->input($fieldName.'_other', $opt['other']);
 			}
 			$out = $this->input($fieldName, $opt);
 		}else{
 			if(preg_match('/[_a-z0-9]/i',$opt['countrySelect'])){
-				$opt['countrySelect'] = '#'.$this->Form->domId($opt['countrySelect']);
+				$opt['countrySelect'] = '#'.$this->domId($opt['countrySelect']);
 				$this->setEntity($fieldName);
 			}
 			$loadScript = true;
@@ -615,7 +644,7 @@ class O2formHelper extends AppHelper {
 			if($opt['empty']){
 				$opt['empty'] = array_merge($defOpt['empty'],(array)$opt['empty']);
 				$opt['empty']['options'] = $allOpt;
-				$out .= $this->Form->input($fieldName, $opt['empty']);
+				$out .= $this->input($fieldName, $opt['empty']);
 			}
 			foreach($regions as $region){
 				$caseOpt = Set::merge($opt['cases'],$region,$fowardOpt);
@@ -626,7 +655,7 @@ class O2formHelper extends AppHelper {
 			}
 			if($opt['more']){
 				$opt['more'] = array_merge($defOpt['more'],(array)$opt['more']);
-				$out .= $this->Form->input($fieldName, $opt['more']);
+				$out .= $this->input($fieldName, $opt['more']);
 			}
 			if($opt['div']){
 				$opt['div']['linked'] = $opt['countrySelect'];
@@ -682,7 +711,7 @@ class O2formHelper extends AppHelper {
 				$labelText = $label['text'];
 				//unset($label['text']);
 			}
-			return $this->Form->label($fieldName, $labelText, $label);
+			return $this->label($fieldName, $labelText, $label);
 		}
 		return null;
 	}
@@ -720,7 +749,7 @@ class O2formHelper extends AppHelper {
 	
 	function _divWrapper($fieldName, $output ,$options = array() ){
 		$divOptions = array();
-		$div = $this->Form->_extractOption('div', $options, true);
+		$div = $this->_extractOption('div', $options, true);
 		$modelKey = $this->model();
 		if (!empty($div)) {
 			$divOptions['class'] = 'input';
