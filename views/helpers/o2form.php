@@ -556,6 +556,7 @@ class O2formHelper extends FormHelper {
 			$defOpt = array_merge($defOpt,array(
 				'empty'=>array(
 					'div'=>array('class' => 'input extendedSelectCase extendedSelectEmpty select'),
+					'other'=>true,
 				),
 				'cases'=>array(
 					'div'=>array('class' => 'input extendedSelectCase select','style'=>'display:none'),
@@ -623,6 +624,7 @@ class O2formHelper extends FormHelper {
 				$opt['other']['optLabel'] = $opt['other']['label'];
 			}
 			$allOpt['other'] = $opt['other']['optLabel'];
+			unset($opt['other']['optLabel']);
 		}
 		$localOpt = array('countrySelect', 'options', 'other', 'empty', 'cases', 'more', 'type');
 		$fowardOpt = array_diff_key($options,array_flip($localOpt));
@@ -642,15 +644,17 @@ class O2formHelper extends FormHelper {
 			$loadScript = true;
 			$out = '';
 			if($opt['empty']){
-				$opt['empty'] = array_merge($defOpt['empty'],(array)$opt['empty']);
+				$opt['empty'] = array_merge($defOpt['empty'],(array)$opt['empty'],$fowardOpt);
 				$opt['empty']['options'] = $allOpt;
+				if($opt['empty']['other']){
+					$opt['empty']['after'] = $this->input($fieldName.'_other', $opt['other']);
+				}
 				$out .= $this->input($fieldName, $opt['empty']);
 			}
 			foreach($regions as $region){
 				$caseOpt = Set::merge($opt['cases'],$region,$fowardOpt);
 				$caseOpt['div']['rel'] = $region['rel'];
 				unset($caseOpt['rel']);
-				//debug($caseOpt);
 				$out .= $this->input($fieldName, $caseOpt);
 			}
 			if($opt['more']){
