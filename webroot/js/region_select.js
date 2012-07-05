@@ -45,12 +45,12 @@
 					$current = $('.extendedSelectMore',this);
 				}
 			}
-			if(window.console){
+			/*if(window.console){
 				console.log($cases);
 				console.log(val);
 				console.log($select);
 				console.log($current);
-			}
+			}*/
 			$cases.hide();
 			$('input, select, textarea',$cases).attr('disabled',true);
 			$current.show();
