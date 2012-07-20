@@ -68,6 +68,44 @@ class O2formHelper extends FormHelper {
 	
 	function null_checkbox($fieldName, $options = array()){
 		if(isset($options['null_checkbox']) && $options['null_checkbox']!==false){
+			$defOpt = array(
+				'type'=>'checkbox',
+				'label'=>'Null',
+				'div'=>array('class'=>'disable_checkbox_div clearfix'),
+				'class'=>'disable_checkbox',
+				'pos'=>'after',
+				'hide'=>false,
+				'stealLabel'=>false,
+				'revert'=>false,
+			);
+			$presets = array(
+				'before' => array(
+					'label'=>false,
+					'pos'=>'before',
+					'class'=>'disable_checkbox before',
+					'div'=>false,
+					'hide'=>true,
+					'stealLabel'=>true,
+					'revert'=>true,
+				)
+			);
+			$local = array('pos','preset','stealLabel');
+			$nullOpt = array();
+			if($options['null_checkbox']!==true){
+				if(is_array($options['null_checkbox'])){
+					$nullOpt = $options['null_checkbox'];
+				}elseif(in_array($options['null_checkbox'],array_keys($presets))){
+					$nullOpt['preset'] = $options['null_checkbox'];
+				}else{
+					$nullOpt['label'] = $options['null_checkbox'];
+				}
+			}
+			if(!empty($nullOpt['preset']) && !empty($presets[$nullOpt['preset']]) ){
+				$nullOpt = array_merge($presets[$nullOpt['preset']],$nullOpt);
+			}
+			$nullOpt = array_merge($defOpt,$nullOpt);
+			
+			
 			$this->setEntity($fieldName);
 			//$this->Javascript->link('jquery-1.3.2.min', false); 
 			$this->Javascript->link('/o2form/js/o2form', null, array('inline'=>false)); 
@@ -76,11 +114,6 @@ class O2formHelper extends FormHelper {
 				$options['before'] = '';
 			}
 			$options['before'] = $this->hidden($fieldName,array('value'=>''))."\n".$options['before'];
-			if($options['null_checkbox']!==true){
-				$label = $options['null_checkbox'];
-			}else{
-				$label = __('Null',true);
-			}
 			if(!isset($options['after'])){
 				$options['after'] = '';
 			}
@@ -92,7 +125,16 @@ class O2formHelper extends FormHelper {
 					$checked = true;
 				}
 			}
-			$options['after'] .= $this->input($fieldName.'_null',array('type'=>'checkbox','label'=>$label,'div'=>array('class'=>'disable_checkbox_div clearfix'),'class'=>'disable_checkbox','checked'=>$checked));
+			$nullOpt['checked'] = $checked;
+			if($nullOpt['revert']){
+				$nullOpt['before'] = $this->hidden($fieldName.'_null',array('value'=>'1','id'=>$this->domId($fieldName.'_null').'_'));
+				$nullOpt['value'] = '[[ZERO]]';
+				$nullOpt['hiddenField'] = false;
+			}
+			$options[$nullOpt['pos']] .= str_replace('[[ZERO]]','0',$this->input($fieldName.'_null',array_diff_key($nullOpt,array_flip($local))));
+			if($nullOpt['stealLabel'] && empty($nullOpt['label'])){
+				$options['label']['for'] = $this->domId($fieldName.'_null');
+			}
 		}
 		return $options;
 	}
