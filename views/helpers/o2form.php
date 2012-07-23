@@ -119,9 +119,7 @@ class O2formHelper extends FormHelper {
 			}
 			$checked = false;
 			if(!empty($this->data[$this->model()]) && array_key_exists($this->field(),$this->data[$this->model()])){
-				if(is_null($this->data[$this->model()][$this->field()])){
-					$checked = true;
-				}else if(empty($this->data[$this->model()][$this->field()])){
+				if( (is_null($this->data[$this->model()][$this->field()]) || empty($this->data[$this->model()][$this->field()])) == !$nullOpt['revert']){
 					$checked = true;
 				}
 			}
@@ -133,6 +131,9 @@ class O2formHelper extends FormHelper {
 			}
 			$options[$nullOpt['pos']] .= str_replace('[[ZERO]]','0',$this->input($fieldName.'_null',array_diff_key($nullOpt,array_flip($local))));
 			if($nullOpt['stealLabel'] && empty($nullOpt['label'])){
+				if(!empty($options['label']) && !is_array($options['label'])){
+					$options['label'] = array('text'=>$options['label']);
+				}
 				$options['label']['for'] = $this->domId($fieldName.'_null');
 			}
 		}
