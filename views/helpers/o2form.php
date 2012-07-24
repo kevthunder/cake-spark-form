@@ -348,6 +348,7 @@ class O2formHelper extends FormHelper {
 		}
 		$defOpt = array(
 			'mode' => 'table',
+			'id'=>$this->domId($fieldName),
 			'elem' => null,
 			'elemVars' => array('labels'),
 			'toAttributes' => array('div'),
@@ -364,10 +365,12 @@ class O2formHelper extends FormHelper {
 				'spc' => 'deleteInput',
 				'type' => 'hidden',
 			),
-			'minRows' => 0, 
+			'min' => 0, 
 			'addLabel' => '+',
 			'deleteLabel' => '-',
 			'deleteColLabel' => __('Delete',true),
+			'mainContainer' => null,
+			'toMainContainer' => array('id','min','max'),
 		);
 		$modeOpt = array(
 			'table' => array(
@@ -375,11 +378,11 @@ class O2formHelper extends FormHelper {
 				'elemVars' => array('labels'),
 				'toAttributes' => array('table','td','tdAction','trAction','div'),
 				'independantLabels' => true,
+				'mainContainer' => 'table',
 				'table'=>array(
 					'class'=>array('MultipleTable'),
 					'cellspacing'=>0,
 					'cellpadding'=>0,
-					'id'=>$this->domId($fieldName),
 				),
 				'tr'=>array(
 					'class'=>array('line'),
@@ -396,6 +399,10 @@ class O2formHelper extends FormHelper {
 		);
 		//normalize and count
 		$options['fields'] = Set::normalize($options['fields']);
+		if(!empty($options['minRows'])){
+			$options['min'] = $options['minRows'];
+			unset($options['minRows']);
+		}
 		$opt = array_merge($defOpt,$options);
 		if(!empty($opt['mode']) && !empty($modeOpt[$opt['mode']])){
 			$opt = array_merge($defOpt,$modeOpt[$opt['mode']],$options);
@@ -461,7 +468,7 @@ class O2formHelper extends FormHelper {
 		}
 		$lines = array();
 		$nbRow = count($values);
-		$nbRow = max($nbRow,$opt['minRows']);
+		$nbRow = max($nbRow,$opt['min']);
 		for ($i = -1; $i < $nbRow; $i++) {
 			$line = array();
 			$model = ($i == -1);
@@ -505,6 +512,13 @@ class O2formHelper extends FormHelper {
 			}
 			$lines[] = $line;
 		}
+		
+		
+		
+		if(!empty($opt['mainContainer']) && !empty($opt['toMainContainer'])){
+			$opt[$opt['mainContainer']] = array_merge($opt[$opt['mainContainer']],array_intersect_key($opt,array_flip($opt['toMainContainer'])));
+		}
+		
 		
 		$elemsAttr = array();
 		foreach(Set::normalize($opt['toAttributes']) as $key => $val){

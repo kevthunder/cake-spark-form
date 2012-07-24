@@ -7,6 +7,13 @@
 		});
 		$('.MultipleTable .btAdd').live('click',function (){
 			$table = $(this).closest('.MultipleTable');
+			activeCount = $('.line:not(.modelLine, .deletedLine)',$table).length;
+			if($table.attr('max') && activeCount+1 >= $table.attr('max')){
+				$(this).addClass('.disabled');
+				if(activeCount >= $table.attr('max')){
+					return false
+				}
+			}
 			$model = $('.modelLine',$table);
 			$last = $('.line:last',$table);
 			$clone = $model.clone();
@@ -25,6 +32,11 @@
 		});
 	});
 	window.multipleDeleteRow = function($line){
+		$table = $($line).closest('.MultipleTable');
+		activeCount = $('.line:not(.modelLine, .deletedLine)',$table).length;
+		if($table.attr('max') && activeCount-1 < $table.attr('max')){
+			$('.btAdd',$table).removeClass('.disabled');
+		}
 		$line.addClass('deletedLine').find('input, textarea, select').filter(':not([spc=keyInput],[spc=deleteInput])').attr('disabled',true);
 		$('input, textarea, select',$line).filter('[spc=deleteInput]').val(1);
 	};
