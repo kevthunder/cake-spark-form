@@ -412,7 +412,7 @@ class O2formHelper extends FormHelper {
 		$this->setEntity($fieldName);
 		
 		$fullFieldName = $fieldName;
-		if(substr($fullFieldName,0,strlen($this->model())+1) != $this->model().'.'){
+		if($fullFieldName != ucfirst($fullFieldName) && substr($fullFieldName,0,strlen($this->model())+1) != $this->model().'.'){
 			$fullFieldName = $this->model().'.'.$fullFieldName;
 		}
 		
