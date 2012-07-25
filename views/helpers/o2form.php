@@ -652,7 +652,7 @@ class O2formHelper extends FormHelper {
 			$cregions = Geography::getRegions($key);
 			if(is_array($country) && !empty($country['regions']) && !is_array($country['regions'])){
 				$selected = Set::normalize($country['regions']);
-				$cregions = array_intersect_key($selected,$selected);
+				$cregions = array_intersect_key($cregions,$selected);
 			}
 			if(!empty($cregions)){
 				$regions[]= array(
