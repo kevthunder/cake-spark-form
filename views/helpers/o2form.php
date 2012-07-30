@@ -1,4 +1,6 @@
 <?php
+App::import('Helper','Form');
+
 class O2formHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
@@ -366,9 +368,13 @@ class O2formHelper extends FormHelper {
 				'type' => 'hidden',
 			),
 			'min' => 0, 
-			'addLabel' => '+',
-			'deleteLabel' => '-',
-			'deleteColLabel' => __('Delete',true),
+			'add' => array(
+				'label' => '+',
+			),
+			'delete' => array(
+				'label' => '-',
+				'colLabel' => __('Delete',true),
+			),
 			'mainContainer' => null,
 			'toMainContainer' => array('id','min','max'),
 		);
@@ -399,10 +405,15 @@ class O2formHelper extends FormHelper {
 		);
 		//normalize and count
 		$options['fields'] = Set::normalize($options['fields']);
-		if(!empty($options['minRows'])){
-			$options['min'] = $options['minRows'];
-			unset($options['minRows']);
-		}
+		
+		$optionsAlias = array(
+			'minRows' => 'min',
+			'addLabel' => 'add.label',
+			'deleteLabel' => 'delete.label',
+			'deleteColLabel' => 'delete.colLabel',
+		);
+		$options = $this->_parseOptAliases($options ,$optionsAlias);
+		
 		$opt = array_merge($defOpt,$options);
 		if(!empty($opt['mode']) && !empty($modeOpt[$opt['mode']])){
 			$opt = array_merge($defOpt,$modeOpt[$opt['mode']],$options);
@@ -787,6 +798,15 @@ class O2formHelper extends FormHelper {
 		return $options;
 	}
 	
+	function _parseOptAliases($opt,$aliases){
+		foreach($aliases as $a => $path){
+			if(Set::check($opt,$a)){
+				Set::insert($opt,$path,Set::extract($a,$opt));
+				Set::remove($opt,$a);
+			}
+		}
+		return $opt;
+	}
 	
 	function _getHelper($objName){
 		$obj = null;
