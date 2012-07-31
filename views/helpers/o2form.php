@@ -473,7 +473,12 @@ class O2formHelper extends FormHelper {
 			$labels = array();
 			foreach($tmp = $opt['fields'] as $key => $field){
 				if(empty($field['type']) || $field['type'] != 'hidden'){
-					$labels[] = $field['label'];
+					if(is_array($field['label'])){
+						$field = $this->label_aposition($key,$field);
+						$labels[] = $field['label']['text'];
+					}else{
+						$labels[] = $field['label'];
+					}
 					$opt['fields'][$key]['label'] = false;
 				}
 			}
@@ -857,6 +862,7 @@ class O2formHelper extends FormHelper {
 		$divOptions = array();
 		$div = $this->_extractOption('div', $options, true);
 		$modelKey = $this->model();
+		$fieldKey = $this->field();
 		if (!empty($div)) {
 			$divOptions['class'] = 'input';
 			$divOptions = $this->addClass($divOptions, $options['type']);
