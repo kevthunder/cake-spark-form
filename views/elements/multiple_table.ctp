@@ -15,8 +15,8 @@
 			<tr<?php echo $line['tr'] ?>>
 			<?php $i = 0; foreach($line['inputs'] as $key => $input){ ?>
 				<td<?php echo $elemsAttr['td'] ?>>
-					<?php if( $i == 0  && !empty($line['hidden'])) foreach($line['hidden'] as $key => $input){ ?>
-						<?php echo $this->O2form->input($key,$input); ?>
+					<?php if( $i == 0  && !empty($line['hidden'])) foreach($line['hidden'] as $key => $hidden){ ?>
+						<?php echo $this->O2form->input($key,$hidden); ?>
 					<?php } ?>
 					<?php echo $this->O2form->input($key,$input); ?>
 				</td>

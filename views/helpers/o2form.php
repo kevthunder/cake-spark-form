@@ -770,7 +770,7 @@ class O2formHelper extends FormHelper {
 	
 	
 	function labelFor($fieldName, $options){
-		if (empty($options['label']) || $options['label'] !== false) {
+		if (empty($options['label']) && $options['label'] !== false) {
 			$label = array();
 			if (!empty($options['label'])){
 				$label = $options['label'];
