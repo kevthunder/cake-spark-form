@@ -25,6 +25,7 @@ class O2formHelper extends FormHelper {
  *
  */
 	function input($fieldName, $options = array() ){
+		$this->_checkValidationErrors();
 		$this->setEntity($fieldName);
 		$out = '';
 		$preprocessors = Configure::read('O2form.preprocessors');
@@ -806,6 +807,28 @@ class O2formHelper extends FormHelper {
 			}
 		}
 		return $opt;
+	}
+	
+	function _checkValidationErrors(){
+		if(empty($this->validationErrorsChecked)){
+			if(empty($this->validationErrors)){
+				$this->validationErrors = $this->Form->validationErrors;
+			}
+			foreach($this->validationErrors as $model => $errors){
+				$checked = array();
+				foreach($errors as $field => $err){
+					if(strpos($field,'.')!==false){
+						$checked = Set::insert($checked,$field,$err);
+					}else{
+						$checked[$field] = $err;
+					}
+				}
+				$this->validationErrors[$model] = $checked;
+			}
+			//debug($this->validationErrors);
+			$this->Form->validationErrors = $this->validationErrors;
+		}
+		$this->validationErrorsChecked = true;
 	}
 	
 	function _getHelper($objName){
