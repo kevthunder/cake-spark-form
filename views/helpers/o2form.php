@@ -814,16 +814,18 @@ class O2formHelper extends FormHelper {
 			if(empty($this->validationErrors)){
 				$this->validationErrors = $this->Form->validationErrors;
 			}
-			foreach($this->validationErrors as $model => $errors){
-				$checked = array();
-				foreach($errors as $field => $err){
-					if(strpos($field,'.')!==false){
-						$checked = Set::insert($checked,$field,$err);
-					}else{
-						$checked[$field] = $err;
+			if(!empty($this->validationErrors)){
+				foreach($this->validationErrors as $model => $errors){
+					$checked = array();
+					foreach($errors as $field => $err){
+						if(strpos($field,'.')!==false){
+							$checked = Set::insert($checked,$field,$err);
+						}else{
+							$checked[$field] = $err;
+						}
 					}
+					$this->validationErrors[$model] = $checked;
 				}
-				$this->validationErrors[$model] = $checked;
 			}
 			//debug($this->validationErrors);
 			$this->Form->validationErrors = $this->validationErrors;
