@@ -211,24 +211,29 @@ class O2formHelper extends FormHelper {
 		unset($opt['hiddenField']);
 
 		foreach ($options['options'] as $optValue => $optConf) {
-			$optionsHere = array('value' => $optValue);
 			if(!is_array($optConf)){
 				$optConf = array('label'=>$optConf);
 			}
 			if(!is_array($optConf['label'])){
 				$optConf['label'] = array('text'=>$optConf['label']);
 			}
-			
-			if (isset($value) && $optValue == $value) {
-				$optionsHere['checked'] = 'checked';
+			$defOptConf = array(
+				'before' => '',
+				'between' => '',
+				'after' => '',
+				'value' => $optValue,
+			);
+			if (isset($value) && (isset($optConf['value'])?$optConf['value']:$optValue) == $value) {
+				$defOptConf['checked'] = 'checked';
 			}
+			$optConf = array_merge($defOptConf,$optConf);
 			$parsedOptions = $this->_parseAttributes(
-				array_merge($opt,$optConf,$optionsHere),
-				array('name', 'type', 'id', 'label'), '', ' '
+				array_merge($opt,$optConf),
+				array('name', 'type', 'id', 'label', 'before', 'between', 'after'), '', ' '
 			);
 			if(empty($optConf['id'])){
 				$tagName = Inflector::camelize(
-					$opt['id'] . '_' . Inflector::underscore($optValue)
+					$opt['id'] . '_' . Inflector::underscore($optConf['value'])
 				);
 			}else{
 				$tagName = $optConf['id'];
@@ -239,10 +244,10 @@ class O2formHelper extends FormHelper {
 				$titleAttr = $this->_parseAttributes($optConf['label'],array('text','for'));
 				$optTitle =  sprintf($this->Html->tags['label'], $tagName, $titleAttr, $optConf['label']['text']);
 			}
-			$out[] =  sprintf(
+			$out[] =  $optConf['before'].sprintf(
 				$this->Html->tags['radio'], $opt['name'],
-				$tagName, $parsedOptions, $optTitle
-			);
+				$tagName, $parsedOptions, $optConf['between'].$optTitle
+			).$optConf['after'];
 		}
 		$hidden = null;
 
