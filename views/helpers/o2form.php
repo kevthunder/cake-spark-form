@@ -608,7 +608,8 @@ class O2formHelper extends FormHelper {
 		);
 		$opt = array_merge($defOpt,$options);
 		App::import('Lib', 'O2form.Geography');
-		$countries = Geography::getCountries();
+		$foward = array('translate','continent');
+		$countries = Geography::getCountries(null,array_intersect_key($opt,array_flip($foward)));
 		if($opt['options'] === true){
 			$opt['options'] = $countries;
 		}else{
