@@ -7,11 +7,60 @@ class O2formHelper extends FormHelper {
 	
 	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio');
 	
-	var $preprocessors = array('null_checkbox','label_aposition');
+	var $preprocessors = array('null_checkbox','label_aposition','name_to_type');
 	
 	var $preprocConflicts = array('region'=>array('label_aposition'));
 	 
-	 
+	function __construct(){
+		$preprocessors = Configure::read('O2form.preprocessors');
+		$preprocessors = array_merge($this->preprocessors, (array)$preprocessors);
+		$customTypes = Configure::read('O2form.customTypes');
+		$customTypes = array_merge($this->customTypes, (array)$customTypes);
+		
+		$callbacklists = array(&$customTypes,&$preprocessors);
+		foreach($callbacklists as &$list){
+			$flat = Set::flatten($list,'.');
+			$final = array();
+			foreach($flat as $key => $funct){
+				if(!is_array($funct)){
+					$keys = array_filter(explode('.', $key),array($this,'_notNumeric'));
+					$helper = null;
+					$plugin = null;
+					if(count($keys) == 1){
+						$helper = $keys[0];
+					}elseif(count($keys) > 1){
+						$plugin = array_shift($keys);
+						$helper = array_shift($keys);
+					}
+					
+					$callback = array(
+						'funct' => $funct
+					);
+					if($helper){
+						$fullName = $helper;
+						$callback['helper'] = $helper;
+						if($plugin){
+							$callback['plugin'] = $plugin;
+							$fullName = $plugin.'.'.$helper;
+						}
+						if(!in_array($fullName,$this->helpers)){
+							$this->helpers[] = $fullName;
+						}
+					}
+					$final[$funct] = $callback;
+				}elseif(is_numeric($key)){
+					$final[$funct['funct']] = $funct;
+				}else{
+					$final[$key] = $funct;
+				}
+			}
+			$list = $final;
+		}
+		
+		
+		$this->preprocessors = $preprocessors;
+		$this->customTypes = $customTypes;
+	}
 /**
  * 
  *
@@ -28,38 +77,25 @@ class O2formHelper extends FormHelper {
 		$this->_checkValidationErrors();
 		$this->setEntity($fieldName);
 		$out = '';
-		$preprocessors = Configure::read('O2form.preprocessors');
-		$preprocessors = array_merge($this->preprocessors, (array)$preprocessors);
-		foreach($preprocessors as $objName => $processors){
-			$obj =& $this->_getHelper($objName);
-			if($obj && is_object($obj)){
-				if(!is_array($processors)){
-					$processors = array($processors);
-				}
-				foreach($processors as $processor){
-					if(method_exists($obj,$processor) && 
-						(empty($options['type']) || empty($this->preprocConflicts[$options['type']]) || !in_array($processor,$this->preprocConflicts[$options['type']]))
-					){
-						$res = $obj->{$processor}($fieldName, $options);
-						if(is_array($res)){
-							$options = $res;
-						}elseif($res === false){
-							return null;
-						}
-					}
+		foreach($this->preprocessors as $name => $processor){
+			$obj = !empty($processor['helper']) ? $this->{$processor['helper']} : $this;
+			$funct = $processor['funct'];
+			if(method_exists($obj,$funct) && 
+				(empty($options['type']) || empty($this->preprocConflicts[$options['type']]) || !in_array($name,$this->preprocConflicts[$options['type']]))
+			){
+				$res = $obj->{$funct}($fieldName, $options);
+				if(is_array($res)){
+					$options = $res;
+				}elseif($res === false){
+					return null;
 				}
 			}
 		}
-		$customTypes = Configure::read('O2form.customTypes');
-		$customTypes = array_merge($this->customTypes, (array)$customTypes);
-		$customTypes = array_flip(Set::flatten($customTypes,'>'));
-		if(!empty($options['type']) && isset($customTypes[$options['type']])){
-			$objName = $customTypes[$options['type']];
-			$objName = explode('>', $objName, 2);
-			$objName = $objName[0];
-			$obj =& $this->_getHelper($objName);
-			if($obj && is_object($obj) && method_exists($obj,$options['type'])){
-				$out .= $obj->{$options['type']}($fieldName, $options);
+		if(!empty($options['type']) && isset($this->customTypes[$options['type']])){
+			$obj = !empty($this->customTypes[$options['type']]['helper']) ? $this->{$this->customTypes[$options['type']]['helper']} : $this;
+			$funct = $this->customTypes[$options['type']]['funct'];
+			if($obj && is_object($obj) && method_exists($obj,$funct)){
+				$out .= $obj->{$funct}($fieldName, $options);
 			}
 		}else{
 			$out .= parent::input($fieldName, $options);
@@ -158,6 +194,17 @@ class O2formHelper extends FormHelper {
 			}
 			unset($options['label']['suffix']);
 			unset($options['label']['prefix']);
+		}
+		return $options;
+	}
+	
+	function name_to_type($fieldName, $options = array()){
+		$nameToType = Configure::read('O2form.nameToType');
+		$nameToType = Set::normalize($nameToType);
+		if(!empty($nameToType) && empty($options['type']) && !empty($nameToType[$fieldName])){
+			$type = $nameToType[$fieldName];
+			if(empty($type)) $type = $fieldName;
+			$options['type'] = $type;
 		}
 		return $options;
 	}
@@ -846,7 +893,7 @@ class O2formHelper extends FormHelper {
 	
 	function _getHelper($objName){
 		$obj = null;
-		if(is_numeric($objName)){
+		if(!$objName || is_numeric($objName)){
 			$obj =& $this;
 		}else{
 			$objFullName = $objName;
@@ -960,6 +1007,10 @@ class O2formHelper extends FormHelper {
 		if($inline){
 			return $res;
 		}
+	}
+	
+	function _notNumeric($val){
+		return !is_numeric($val);
 	}
 	
 }
