@@ -667,6 +667,24 @@ class Geography extends Object {
 		return $val;
 	}
 	
+	function getContinent($code, $translate = true){
+		$_this =& Geography::getInstance();
+		if(strlen($code) == 3){
+			$code = $_this->code3To2($code,true);
+		}
+		$continents = $_this->countries;
+		foreach($continents as $name => $countries){
+			if(isset($countries[$code])){
+				if($translate){
+					return __($name,true);
+				}else{
+					return $name;
+				}
+			}
+		}
+		return null;
+	}
+	
 	function code3To2($code,$returnDef = false){
 		$_this =& Geography::getInstance();
 		$ncode = strtoupper($code);
