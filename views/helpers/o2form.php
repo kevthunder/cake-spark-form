@@ -12,9 +12,11 @@ class O2formHelper extends FormHelper {
 	var $preprocConflicts = array('region'=>array('label_aposition'));
 	 
 	function __construct(){
-		$preprocessors = Configure::read('O2form.preprocessors');
+		App::import('Lib', 'O2form.O2formConfig');
+		
+		$preprocessors = O2formConfig::load('preprocessors');
 		$preprocessors = array_merge($this->preprocessors, (array)$preprocessors);
-		$customTypes = Configure::read('O2form.customTypes');
+		$customTypes = O2formConfig::load('customTypes');
 		$customTypes = array_merge($this->customTypes, (array)$customTypes);
 		
 		$callbacklists = array(&$customTypes,&$preprocessors);
