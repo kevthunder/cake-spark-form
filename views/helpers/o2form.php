@@ -576,10 +576,10 @@ class O2formHelper extends FormHelper {
 					if(!empty($trOpt['fields'])){
 						$optDelete = array_merge($trOpt['fields'],$optDelete);
 					}
-					$line['hidden'][$fieldName.'.'.$index.'.delete'] = $optDelete;
+					$line['hidden'][$fullFieldName.'.'.$index.'.delete'] = $optDelete;
 					$field['spc'] = 'keyInput';
 				}
-				$line['hidden'][$fieldName.'.'.$index.'.'.$key] = $field;
+				$line['hidden'][$fullFieldName.'.'.$index.'.'.$key] = $field;
 			}
 			$lines[] = $line;
 		}
