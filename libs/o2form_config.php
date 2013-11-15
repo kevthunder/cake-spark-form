@@ -29,10 +29,10 @@ class O2formConfig extends Object {
 	
 		$_this =& O2formConfig::getInstance();
 		if(!$_this->loaded){
-			config('plugins/newsletter');
-			$config = Configure::read('Newsletter');
+			config('plugins/o2form');
+			$config = Configure::read('O2form');
 			$config = Set::merge($_this->defaultConfig,$config);
-			Configure::write('Newsletter',$config);
+			Configure::write('O2form',$config);
 			$_this->loaded = true;
 			
 			if( in_array('Filter',App::Objects('plugin')) ) {
@@ -40,7 +40,7 @@ class O2formConfig extends Object {
 			}
 		}
 		if(!empty($path)){
-			return Configure::read('Newsletter'.($path!==true?'.'.$path:''));
+			return Configure::read('O2form'.($path!==true?'.'.$path:''));
 		}
 	}
 	
