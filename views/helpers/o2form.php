@@ -5,7 +5,7 @@ class O2formHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio');
+	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio', 'html');
 	
 	var $preprocessors = array('null_checkbox','label_aposition','name_to_type');
 	
@@ -803,6 +803,39 @@ class O2formHelper extends FormHelper {
 		return $out;
 	}
 	
+	function html($fieldName, $options = array()){
+		if(is_array($fieldName)){
+			$options = $fieldName;
+		}
+		if(!is_array($options)){
+			$options = array('html'=>$options);
+		}
+		
+		$defOpt = array(
+			'wrapper' => null,
+			'html' => null,
+		);
+		$opt = array_merge($defOpt,$options);
+		
+		if(!empty($opt['wrapper'])){
+			if(!is_array($opt['wrapper'])){
+				$opt['wrapper'] = array('tag'=>$opt['wrapper']);
+			}
+			$defWrapper = array(
+				'tag'=>'div',
+			);
+			$opt['wrapper'] = array_merge($defWrapper,$opt['wrapper']);
+		}
+		
+		$out = '';
+		$out = $options['html'];
+		if($opt['wrapper']){
+			$tag = $opt['wrapper']['tag'];
+			unset($opt['wrapper']['tag']);
+			$out = $this->Html->tag($tag, $out, $opt['wrapper']);
+		}
+		return $out;
+	}
 	
 	////////////////////////// Other functions //////////////////////////
 	

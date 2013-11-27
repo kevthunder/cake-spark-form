@@ -1,6 +1,7 @@
 <?php if($elemsAttr['div'] !== false){ ?>
 <div<?php echo $elemsAttr['div'] ?>>
 <?php } ?>
+	<?php if( !empty($options['before']) ) echo $options['before']; ?>
 	<?php echo $this->O2form->labelFor($fieldName, $options); ?>
 	<table<?php echo $elemsAttr['table'] ?>>
 		<tr>
@@ -34,6 +35,7 @@
 		</tr>
 		<?php } ?>
 	</table>
+	<?php if( !empty($options['after']) ) echo $options['after']; ?>
 <?php if($elemsAttr['div'] !== false){ ?>
 </div>
 <?php } ?>
