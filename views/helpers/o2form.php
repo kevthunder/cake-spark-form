@@ -610,29 +610,16 @@ class O2formHelper extends FormHelper {
 	
 	function datepicker($fieldName, $options = array()){
 		$html = '';
-		$html .= $this->loadAsset('jquery-ui','css');
-		$html .= $this->loadAsset('jquery-ui','js');
-		$html .= $this->loadAsset('datepickerDef');
-		$pickerOpt = array(
-			'changeMonth' => true,
-			'changeYear' => true,
-			'dateFormat' => 'yy-mm-dd',
-		);
+		
 		$toPicker = array('changeMonth','changeYear','defaultDate','firstDay','maxDate','minDate','yearRange','dateFormat');
-		$pickerOpt = array_merge($pickerOpt,array_intersect_key($options,array_flip($toPicker)));
-		$options = array_diff_key($options,array_flip($toPicker));
+		$pickerOpt = array_intersect_key($options,array_flip($toPicker));
 		if(!empty($options['jsOpt'])){
 			$pickerOpt = array_merge($pickerOpt,$options['jsOpt']);
 			unset($options['jsOpt']);
 		}
-		$this->Html->scriptBlock('
-			(function( $ ) {
-				$(function(){
-					$("#'.$this->domId($fieldName).'").datepicker('.json_encode($pickerOpt).');
-				})
-			})( jQuery );
-			
-		',array('inline'=>false));
+		$html .= $this->datepickerScript('#'.$this->domId($fieldName),$pickerOpt);
+		$options = array_diff_key($options,array_flip($toPicker));
+		
 		$options['type'] = 'text';
 		$val = $this->value($options);
 		$val = $val['value'];
@@ -839,6 +826,31 @@ class O2formHelper extends FormHelper {
 	
 	////////////////////////// Other functions //////////////////////////
 	
+	function datepickerScript($selector, $options = array()){
+		$html = '';
+		$html .= $this->loadAsset('jquery-ui','css');
+		$html .= $this->loadAsset('jquery-ui','js');
+		$html .= $this->loadAsset('datepickerDef');
+		$defOpt = array(
+			'changeMonth' => true,
+			'changeYear' => true,
+			'dateFormat' => 'yy-mm-dd',
+		);
+		$opt = array_merge($defOpt,$options);
+		$this->Html->scriptBlock('
+			(function( $ ) {
+				function update(){
+					$("'.$selector.'").filter(":not(.hasDatepicker)").datepicker('.json_encode($opt).');
+				}
+				$(function(){
+					update();
+					$("body").on("updateScript","'.$selector.'",update);
+				})
+			})( jQuery );
+		',array('inline'=>false));
+		
+		return $html;
+	}
 	
 	function defaultLabelText($fieldName, $options = null){
 		if(!empty($options) && array_key_exists('label',$options) && $options['label'] !== true){
