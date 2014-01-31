@@ -610,31 +610,39 @@ class O2formHelper extends FormHelper {
 	
 	function datepicker($fieldName, $options = array()){
 		$html = '';
+		$defOpt = array(
+			'js' => true,
+			'jsOpt' => array('advancedDetection'=>false),
+		);
+		$inputExclude = array('js','jsOpt');
+		$opt = array_merge($defOpt,$options);
+		$inputOpt = array_diff_key($opt,array_flip($inputExclude));
 		
-		$toPicker = array('changeMonth','changeYear','defaultDate','firstDay','maxDate','minDate','yearRange','dateFormat');
-		$pickerOpt = array_intersect_key($options,array_flip($toPicker));
-		if(!empty($options['jsOpt'])){
-			$pickerOpt = array_merge($pickerOpt,$options['jsOpt']);
-			unset($options['jsOpt']);
+		if($opt['js']){
+			$toPicker = $this->_datepickerAttrFoward();
+			$pickerOpt = array_intersect_key($opt,array_flip($toPicker));
+			if(!empty($opt['jsOpt'])){
+				$pickerOpt = array_merge($pickerOpt,$opt['jsOpt']);
+			}
+			$html .= $this->datepickerScript('#'.$this->domId($fieldName),$pickerOpt);
+			$inputOpt = array_diff_key($inputOpt,array_flip($toPicker));
 		}
-		$html .= $this->datepickerScript('#'.$this->domId($fieldName),$pickerOpt);
-		$options = array_diff_key($options,array_flip($toPicker));
 		
-		$options['type'] = 'text';
-		$val = $this->value($options);
+		$inputOpt['type'] = 'text';
+		$val = $this->value($inputOpt);
 		$val = $val['value'];
 		if(!empty($val)){
 			$time = strtotime($val);
 			if($time){
-				$options['value'] = date('Y-m-d',$time);
+				$inputOpt['value'] = date('Y-m-d',$time);
 			}else{
-				$options['value'] = '';
+				$inputOpt['value'] = '';
 			}
 		}
-		if(!array_key_exists('div',$options) || ($options['div'] !== false && !array_key_exists('class',$options['div']))){
-			$options['div']['class'] = 'input text datepicker';
+		if(!array_key_exists('div',$inputOpt) || ($inputOpt['div'] !== false && !array_key_exists('class',$inputOpt['div']))){
+			$inputOpt['div']['class'] = 'input text datepicker';
 		}
-		$html .= $this->input($fieldName, $options);
+		$html .= $this->input($fieldName, $inputOpt);
 		return $html;
 	}
 	
@@ -826,28 +834,56 @@ class O2formHelper extends FormHelper {
 	
 	////////////////////////// Other functions //////////////////////////
 	
-	function datepickerScript($selector, $options = array()){
+	function datepickerScript($selector=null, $options = array()){
 		$html = '';
 		$html .= $this->loadAsset('jquery-ui','css');
 		$html .= $this->loadAsset('jquery-ui','js');
 		$html .= $this->loadAsset('datepickerDef');
-		$defOpt = array(
-			'changeMonth' => true,
-			'changeYear' => true,
-			'dateFormat' => 'yy-mm-dd',
-		);
-		$opt = array_merge($defOpt,$options);
-		$this->Html->scriptBlock('
-			(function( $ ) {
-				function update(){
-					$("'.$selector.'").filter(":not(.hasDatepicker)").datepicker('.json_encode($opt).');
-				}
-				$(function(){
-					update();
-					$("body").on("updateScript","'.$selector.'",update);
-				})
-			})( jQuery );
-		',array('inline'=>false));
+		
+		if($selector){
+			$defOpt = array(
+				'advancedDetection' => true,
+				'changeMonth' => true,
+				'changeYear' => true,
+				'dateFormat' => 'yy-mm-dd',
+			);
+			$attrFoward = $this->_datepickerAttrFoward();
+			$attrFoward = array_combine($attrFoward,array_map('strtolower',$attrFoward));
+			$opt = array_merge($defOpt,$options);
+			$advanced = $opt['advancedDetection'];
+			unset($opt['advancedDetection']);
+			if($advanced){
+				$this->Html->scriptBlock('
+					(function( $ ) {
+						var attrFoward = '.json_encode($attrFoward).';
+						function update(){
+							var opt = '.json_encode($opt).';
+							$("'.$selector.'").filter(":not(.hasDatepicker)").each(function(){
+								var $this = $(this);
+								$.each(attrFoward, function( index, value ) {
+									if($this.attr(value)){
+										opt[index] = $this.attr(value);
+									}
+								});
+								$(this).datepicker(opt);
+							});
+						}
+						$(function(){
+							update();
+							$("body").on("updateScript","'.$selector.'",update);
+						})
+					})( jQuery );
+				',array('inline'=>false));
+			}else{
+				$this->Html->scriptBlock('
+					(function( $ ) {
+						$(function(){
+							$("'.$selector.'").datepicker('.json_encode($opt).');
+						})
+					})( jQuery );
+				',array('inline'=>false));
+			}
+		}
 		
 		return $html;
 	}
@@ -1032,6 +1068,9 @@ class O2formHelper extends FormHelper {
 		if($inline){
 			return $res;
 		}
+	}
+	function _datepickerAttrFoward(){
+		return array('changeMonth','changeYear','defaultDate','firstDay','maxDate','minDate','yearRange','dateFormat');
 	}
 	function _datepickerDefAsset($inline){
 		$pickerOpt = array(
