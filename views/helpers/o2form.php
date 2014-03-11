@@ -326,7 +326,12 @@ class O2formHelper extends FormHelper {
 		if (isset($attributes) && array_key_exists('multiple', $attributes) && $attributes['multiple'] === false) {
 			unset($attributes['multiple']);
 		}
-		return parent::select($fieldName, $options, $selected, $attributes);
+		$res = parent::select($fieldName, $options, $selected, $attributes);
+		if(!empty($attributes['multiple']) && array_key_exists('hiddenField', $attributes) && !$attributes['hiddenField']){
+			$parts = explode("\n",$res,2);
+			$res = $parts[1];
+		}
+		return $res;
 	}
 	
 	
