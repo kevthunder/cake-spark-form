@@ -5,7 +5,7 @@ class O2formHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio', 'html');
+	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio', 'html', 'definition');
 	
 	var $preprocessors = array('null_checkbox','label_aposition','name_to_type');
 	
@@ -836,6 +836,21 @@ class O2formHelper extends FormHelper {
 		}
 		return $out;
 	}
+	function definition($fieldName, $options = array()){
+		$out = '';
+		$labelText = $this->defaultLabelText($fieldName, $options);
+		if ($labelText) {
+			$out .= $this->Html->tag('dt', h($labelText), array());
+		}
+		if (isset($opt['value'])) {
+			$value = $opt['value'];
+		} else {
+			$value =  $this->value($fieldName);
+		}
+		$out .= $this->Html->tag('dd', h($value), array());
+		
+		return $this->_divWrapper($fieldName, $out, $options, array('tag'=>'dl'));
+	}
 	
 	////////////////////////// Other functions //////////////////////////
 	
@@ -928,7 +943,6 @@ class O2formHelper extends FormHelper {
 			$labelText = null;
 			if (isset($label['text'])) {
 				$labelText = $label['text'];
-				//unset($label['text']);
 			}
 			return $this->label($fieldName, $labelText, $label);
 		}
@@ -999,7 +1013,7 @@ class O2formHelper extends FormHelper {
 		return $obj;
 	}
 	
-	function _divWrapper($fieldName, $output ,$options = array() ){
+	function _divWrapper($fieldName, $output ,$options = array(), $defOpt = array() ){
 		$divOptions = array();
 		$div = $this->_extractOption('div', $options, true);
 		$modelKey = $this->model();
@@ -1007,6 +1021,7 @@ class O2formHelper extends FormHelper {
 		if (!empty($div)) {
 			$divOptions['class'] = 'input';
 			$divOptions = $this->addClass($divOptions, $options['type']);
+			$divOptions = array_merge($divOptions, $defOpt);
 			if (is_string($div)) {
 				$divOptions['class'] = $div;
 			} elseif (is_array($div)) {
