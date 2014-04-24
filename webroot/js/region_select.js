@@ -51,10 +51,15 @@
 				console.log($select);
 				console.log($current);
 			}*/
-			$cases.hide();
-			$('input, select, textarea',$cases).attr('disabled',true);
-			$current.show();
-			$('input, select, textarea',$current,$cases).attr('disabled',false);
+      if(!$current.hasClass('extendedSelectCurrent')){
+        $cases.removeClass('extendedSelectCurrent');
+        $cases.hide();
+        $('input, select, textarea',$cases).attr('disabled',true);
+        $current.addClass('extendedSelectCurrent');
+        $current.show();
+        $('input, select, textarea',$current,$cases).attr('disabled',false);
+        $(this).trigger('refresh');
+      }
 		});
 	}
 	function tcheckOther(){

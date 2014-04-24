@@ -5,9 +5,22 @@ class O2formHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
-	var $customTypes = array('paginated_select','multiple','country','region','datepicker', 'radio', 'html', 'definition');
+	var $customTypes = array(
+		'paginated_select',
+		'multiple',
+		'country',
+		'region',
+		'datepicker',
+		'radio',
+		'html',
+		'definition'
+	);
 	
-	var $preprocessors = array('null_checkbox','label_aposition','name_to_type');
+	var $preprocessors = array(
+		'null_checkbox',
+		'label_aposition',
+		'name_to_type'
+	);
 	
 	var $preprocConflicts = array('region'=>array('label_aposition'));
 	 
@@ -100,6 +113,7 @@ class O2formHelper extends FormHelper {
 				$out .= $obj->{$funct}($fieldName, $options);
 			}
 		}else{
+			$options = $this->joinClasses($options);
 			$out .= parent::input($fieldName, $options);
 		}
 		return $out;
@@ -679,16 +693,16 @@ class O2formHelper extends FormHelper {
 				'optLabel'=> true,
 				'div'=>array('class'=>'input otherInput text')
 			),
-			'div'=>array('class' => 'input extendedSelect'),
+			'div'=>array('class' => array('input','extendedSelect')),
 		);
 		if(!empty($options['countrySelect'])){
 			$defOpt = array_merge($defOpt,array(
 				'empty'=>array(
-					'div'=>array('class' => 'input extendedSelectCase extendedSelectEmpty select'),
+					'div'=>array('class' => array('input','extendedSelectCase','extendedSelectEmpty','select')),
 					'other'=>true,
 				),
 				'cases'=>array(
-					'div'=>array('class' => 'input extendedSelectCase select','style'=>'display:none'),
+					'div'=>array('class' => array('input','extendedSelectCase','select'),'style'=>'display:none'),
 					'disabled' => 'disabled',
 				),
 				'more'=>array(
@@ -701,7 +715,7 @@ class O2formHelper extends FormHelper {
 				'div'=>array('class' => 'input extendedSelect select'),
 			));
 		}
-		$opt = array_merge($defOpt,$options);
+		$opt = $this->mergeOpt($defOpt,$options);
 		$loadScript = false;
 		$out = null;
 		App::import('Lib', 'O2form.Geography');
@@ -773,7 +787,7 @@ class O2formHelper extends FormHelper {
 			$loadScript = true;
 			$out = '';
 			if($opt['empty']){
-				$opt['empty'] = array_merge($defOpt['empty'],(array)$opt['empty'],$fowardOpt);
+				$opt['empty'] = $this->mergeOpt($defOpt['empty'],(array)$opt['empty'],$fowardOpt);
 				$opt['empty']['options'] = $allOpt;
 				if($opt['empty']['other']){
 					$opt['empty']['after'] = $this->input($fieldName.'_other', $opt['other']);
@@ -781,7 +795,7 @@ class O2formHelper extends FormHelper {
 				$out .= $this->input($fieldName, $opt['empty']);
 			}
 			foreach($regions as $region){
-				$caseOpt = Set::merge($opt['cases'],$region,$fowardOpt);
+				$caseOpt = $this->mergeOpt($opt['cases'],$region,$fowardOpt);
 				$caseOpt['div']['rel'] = $region['rel'];
 				unset($caseOpt['rel']);
 				$out .= $this->input($fieldName, $caseOpt);
@@ -949,10 +963,42 @@ class O2formHelper extends FormHelper {
 		return null;
 	}
 	
-	function normalizeAttributesOpt($options, $exclude = null){
+	function mergeOpt($arr1, $arr2 = null) {
+		$args = func_get_args();
+
+		$r = (array)current($args);
+		while (($arg = next($args)) !== false) {
+			foreach ((array)$arg as $key => $val)	 {
+				if (is_int($key)) {
+					if(count(array_filter(array_keys($r,$val),'is_numeric')) < 1){
+						$r[] = $val;
+					}
+				} elseif (is_array($val) && isset($r[$key]) && is_array($r[$key])) {
+					$r[$key] = $this->mergeOpt($r[$key], $val);
+				} else {
+					$r[$key] = $val;
+				}
+			}
+		}
+		return $r;
+	}
+	
+	function joinClasses($options,$recursive = true){
 		if(array_key_exists('class',$options) && is_array($options['class'])){
 			$options['class'] = implode(' ',$options['class']);
 		}
+		if($recursive){
+			foreach($options as &$opt){
+				if(is_array($opt)){
+					$opt = $this->joinClasses($opt,true);
+				}
+			}
+		}
+		return $options;
+	}
+	
+	function normalizeAttributesOpt($options, $exclude = null){
+		$options = $this->joinClasses($options,false);
 		if(!empty($exclude)){
 			$options = array_diff_key($options,array_flip($exclude));
 		}
