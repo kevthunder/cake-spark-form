@@ -1,0 +1,31 @@
+<?php
+
+	Configure::write('Shop.payment.paypal', array(
+		//this is often an email
+		'business'=>'',
+	));
+	
+	Configure::write('Shop.currencies', array('cad','usd'));
+	Configure::write('Shop.currency', 'cad');
+	Configure::write('Shop.shippingTypes', array(
+		'default'=>array(
+			'price'=>50,
+			'tax_applied'=>true,
+			'descr'=>'',
+	)));
+	
+	Configure::write('Shop.emailAdmin', array('to'=>array('info@o2web.com')));
+
+	Configure::write('Shop.countries', array('CA','US'));
+	
+	Configure::write('Shop.defaultCountry', 'CA');
+	Configure::write('Shop.defaultRegion', 'QC');
+	
+	////////// dev setting //////////
+	Configure::write('Shop.devMode', true);
+	Configure::write('Shop.dev.emailAdmin', array('to'=>array('kgiguere@o2web.ca')));
+	Configure::write('Shop.dev.payment.paypal', array(
+		'business'=>'gh_sel_1302206678_biz@o2web.ca',
+		'devMode'=> true,
+	));
+?>
