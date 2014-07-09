@@ -20,8 +20,12 @@
 				$(this).multiple('deleteRow');
 				return false;
 			});
+			$('.btMore',this).live('click.multiple',function (){
+				$(this).multiple('toggleMore');
+				return false;
+			});
 			
-			$('input, textarea, select',this).filter('[spc=deleteInput]').each(function (){
+			$(this).multiple('controls','input, textarea, select').filter('[spc=deleteInput]').each(function (){
 				if($(this).val() == 1){
 					$line = $(this).closest('.line');
 					$line.multiple('deleteRow');
@@ -55,9 +59,16 @@
 			return $(this).closest('.MultipleTable');
 		}
 	 },
-	 deleteRow : function(){
-        return this.each(function(key){
-			var $line;
+	 controls:function(selector,parent){
+      var $container = $(this);
+      if(!parent) parent = $container;
+      var $match = $(selector,parent);
+      return $match.filter(function(i,elem){
+        return $(elem).multiple('getContainer')[0] == $container[0];
+      });
+   },
+   getLine : function(key){
+      var $line, $table;
 			if($(this).is(".line")){
 				$line = $(this);
 			}
@@ -70,34 +81,71 @@
 				$table = $line.multiple('getContainer');
 			}
 			if($table && $table.length){
-				var activeCount = $('.line:not(.modelLine, .deletedLine)',$table).length;
+				var activeCount = $table.multiple('controls','.line:not(.modelLine, .deletedLine)').length;
 				if(!$line && arguments.length == 1){
 					if($('.line[spc=keyInput][val='+key+']').length){
 						$line = $('.line[spc=keyInput][val='+key+']');
 					}
 					if(!$line && !isNaN($key) && key < activeCount){
-						$line = $('.line:not(.modelLine, .deletedLine)',$table)[key];
+						$line = $table.multiple('controls','.line:not(.modelLine, .deletedLine)')[key];
 					}
 				}
+      }
+      return $line;
+   },
+	 deleteRow : function(){
+      return this.each(function(key){
+        var $line = $(this).multiple('getLine',key);
+
 				if($line){
+          var $table = $line.multiple('getContainer');
+          var $lineGroup;
+          if($line.attr('rel')){
+            $lineGroup = $table.multiple('controls','[rel='+$line.attr('rel')+']');
+          }else{
+            $lineGroup = $line;
+          }
 					if($table.attr('max') && activeCount-1 < $table.attr('max')){
-						$('.btAdd',$table).removeClass('.disabled');
+						$table.multiple('controls','.btAdd').removeClass('.disabled');
 					}
-					$line.addClass('deletedLine').find('input, textarea, select').filter(':not([spc=keyInput],[spc=deleteInput])').attr('disabled',true);
-					$('input, textarea, select',$line).filter('[spc=deleteInput]').val(1);
+					$lineGroup.addClass('deletedLine').find('input, textarea, select').filter(':not([spc=keyInput],[spc=deleteInput])').attr('disabled',true);
+					$('input, textarea, select',$lineGroup).filter('[spc=deleteInput]').val(1);
 				}
-			}
-		});
+      });
 	 },
+   toggleMore : function(){
+      return this.each(function(key){
+        var $line = $(this).multiple('getLine',key);
+				if($line){
+          var $table = $line.multiple('getContainer');
+          var $lineGroup;
+          if($line.attr('rel')){
+            $lineGroup = $table.multiple('controls','[rel='+$line.attr('rel')+']');
+          }else{
+            $lineGroup = $line;
+          }
+          var $collapsible = $table.multiple('controls','.collapsible',$lineGroup).add($lineGroup.filter('.collapsible'));
+          var $btMore = $table.multiple('controls','.btMore',$lineGroup);
+          if($collapsible.hasClass('collapsed')){
+            $collapsible.removeClass('collapsed');
+            $btMore.addClass('open');
+          }else{
+            $collapsible.addClass('collapsed');
+            $btMore.removeClass('open');
+          }
+        }
+        
+      });
+   },
 	 nbRows : function(nb){
 		var $table = this.multiple('getContainer');
 		$table = $table.eq(0);
-		var activeCount = $('.line:not(.modelLine, .deletedLine)',$table).length;
+		var activeCount = $table.multiple('controls','.line:not(.modelLine, .deletedLine)').length;
 		if(arguments.length == 1 && !isNaN(nb)){
 			if(activeCount < nb){
 				$table.multiple('addRow',nb-activeCount);
 			}else if(activeCount > nb){
-				$('.line:not(.modelLine, .deletedLine)',$table).slice(nb).multiple('deleteRow');
+				$table.multiple('controls','.line:not(.modelLine, .deletedLine)').slice(nb).multiple('deleteRow');
 			}
 		}
 		return activeCount;
@@ -111,20 +159,23 @@
 				}
 				var $table = $(this);
 				for(var i=0;i<nb;i++){
-					var activeCount = $('.line:not(.modelLine, .deletedLine)',$table).length;
+					var activeCount = $table.multiple('controls','.line:not(.modelLine, .deletedLine)').length;
 					if($table.attr('max') && activeCount+1 >= $table.attr('max')){
-						$('.btAdd',$table).addClass('.disabled');
+						$table.multiple('controls','.btAdd').addClass('.disabled');
 						if(activeCount >= $table.attr('max')){
 							return false
 						}
 					}
-					var $model = $('.modelLine',$table);
-					var $last = $('.line:last',$table);
+					var $model = $table.multiple('controls','.modelLine');
+					var $last = $table.multiple('controls','.line, .subline').last();
 					var $clone = $model.clone();
-					$clone.removeClass('modelLine').find('input, textarea, select').attr('disabled',false);
-					var count = $('.line:not(.modelLine)',$table).length;
-					$clone.html($clone.html().replace(/---i---/g,count));
-					$last.after($clone);
+					var count = $table.multiple('controls','.line:not(.modelLine)').length;
+
+					$clone.each(function(){
+            $(this).removeClass('modelLine').find('input, textarea, select').attr('disabled',false);
+          });
+          var $replace = '---'+String.fromCharCode(105 + parseInt($table.attr("depth")))+'---';
+					$last.after($('<div/>').append($clone).html().replace(new RegExp($replace, "g"),count));
 				}
 			});
 		}

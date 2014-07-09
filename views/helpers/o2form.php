@@ -410,6 +410,7 @@ class O2formHelper extends FormHelper {
 		return $view->element('paginated_select',array('plugin'=>'o2form','options'=>$options,'label'=>$labelElement)); 
 	}
 	
+	var $multiple_depth = 0;
 	function multiple($fieldName, $options = array() ){
 		//debug($options);
 		$this->Html->script('/o2form/js/multiple',array('inline'=>false));
@@ -426,6 +427,7 @@ class O2formHelper extends FormHelper {
 			'mode' => 'table',
 			'id'=>$this->domId($fieldName),
 			'elem' => null,
+			'toLines' => array(),
 			'elemVars' => array('labels'),
 			'toAttributes' => array('div'),
 			'independantLabels' => false,
@@ -434,8 +436,9 @@ class O2formHelper extends FormHelper {
 				'class'=>array('MultipleInput'),
 			),
 			'model'=>array(
+				'index' => '---'.chr($this->multiple_depth+105).'---',
 				'class'=>array('modelLine'),
-				'fields'=>array('disabled'=>true),
+				'fieldsOpt'=>array('disabled'=>true),
 			),
 			'deleteField'=>array(
 				'spc' => 'deleteInput',
@@ -456,9 +459,20 @@ class O2formHelper extends FormHelper {
 			'table' => array(
 				'elem' => 'multiple_table',
 				'elemVars' => array('labels'),
-				'toAttributes' => array('table','td','tdAction','trAction','div'),
+				'toLines' => array('tr','subline'),
+				'toAttributes' => array('table','td','tdAction','trAction','div','line.tr','line.subline.tr','line.subline.td'),
 				'independantLabels' => true,
 				'mainContainer' => 'table',
+				'model'=>array(
+					'tr' => array(
+						'class'=> $defOpt['model']['class']
+					),
+					'subline' => array(
+						'tr' => array(
+							'class'=> $defOpt['model']['class']
+						),
+					)
+				),
 				'table'=>array(
 					'class'=>array('MultipleTable'),
 					'cellspacing'=>0,
@@ -474,7 +488,7 @@ class O2formHelper extends FormHelper {
 				),
 				'tdAction'=>array(
 					'class'=>array('actionCell'),
-				)
+				),
 			)
 		);
 		//normalize and count
@@ -490,8 +504,14 @@ class O2formHelper extends FormHelper {
 		
 		$opt = array_merge($defOpt,$options);
 		if(!empty($opt['mode']) && !empty($modeOpt[$opt['mode']])){
-			$opt = array_merge($defOpt,$modeOpt[$opt['mode']],$options);
+			$opt = Set::merge($defOpt,$modeOpt[$opt['mode']],$options);
 		}
+		
+		$alterFunct = '_multiple'.Inflector::camelize($opt['mode']).'Preprocess';
+		if(method_exists($this,$alterFunct)){
+			$opt = $this->{$alterFunct}($opt);
+		}
+		
 		$nbColls = 1;
 		
 		$this->setEntity($fieldName);
@@ -500,6 +520,7 @@ class O2formHelper extends FormHelper {
 		if($fullFieldName != ucfirst($fullFieldName) && substr($fullFieldName,0,strlen($this->model())+1) != $this->model().'.'){
 			$fullFieldName = $this->model().'.'.$fullFieldName;
 		}
+		$opt['fullFieldName'] = $fullFieldName;
 		
 		$values = current($this->value());
 		if(empty($values)){
@@ -541,7 +562,6 @@ class O2formHelper extends FormHelper {
 				$opt['fields'][$key] = $field;
 			}
 		}
-		$hiddens = array();
 		if($opt['independantLabels']){
 			$labels = array();
 			foreach($tmp = $opt['fields'] as $key => $field){
@@ -560,46 +580,23 @@ class O2formHelper extends FormHelper {
 		$nbRow = count($values);
 		$nbRow = max($nbRow,$opt['min']);
 		for ($i = -1; $i < $nbRow; $i++) {
-			$line = array();
+			$line = array_intersect_key($opt,array_flip($opt['toLines']));
+			$line['index'] = $i;
 			$model = ($i == -1);
-			$trOpt = $opt['tr'];
 			if($model){
-				$trOpt = Set::merge($trOpt,$opt['model']);
+				$line = Set::merge($line,$opt['model']);
 			}
-			$line['tr'] = $this->_parseAttributes($trOpt,array('fields'));
-			$index = $i;
-			if($model){
-				$index = "---i---";
+			
+			$line['inputs'] = $this->_multipleParseLineFields($opt['fields'],$line,$opt);
+			
+			$alterFunct = '_multiple'.Inflector::camelize($opt['mode']).'AlterLine';
+			if(method_exists($this,$alterFunct)){
+				$line = $this->{$alterFunct}($line,$opt);
 			}
-			foreach($tmp = $opt['fields'] as $key => $field){
-				if(!empty($trOpt['fields'])){
-					$field = array_merge($trOpt['fields'],$field);
-				}
-				if(empty($field['type']) || $field['type'] != 'hidden'){
-					if($key != '__val__'){
-						$subFieldName = $fullFieldName.'.'.$index.'.'.$key;
-					}else{
-						$subFieldName = $fullFieldName.'.'.$index;
-					}
-					$line['inputs'][$subFieldName] = $field;
-				}else{
-					$hiddens[$key] = $field;
-				}
-			}
-			foreach($hiddens as $key => $field){
-				if(!empty($trOpt['fields'])){
-					$field = array_merge($trOpt['fields'],$field);
-				}
-				if($key == 'id'){
-					$optDelete = $opt['deleteField'];
-					if(!empty($trOpt['fields'])){
-						$optDelete = array_merge($trOpt['fields'],$optDelete);
-					}
-					$line['hidden'][$fullFieldName.'.'.$index.'.delete'] = $optDelete;
-					$field['spc'] = 'keyInput';
-				}
-				$line['hidden'][$fullFieldName.'.'.$index.'.'.$key] = $field;
-			}
+			
+			$parsed = $this->_multiParseAttributes(array('line'=>$line),$opt['toAttributes']);
+			$line = $parsed['line'];
+			
 			$lines[] = $line;
 		}
 		
@@ -609,22 +606,87 @@ class O2formHelper extends FormHelper {
 			$opt[$opt['mainContainer']] = array_merge($opt[$opt['mainContainer']],array_intersect_key($opt,array_flip($opt['toMainContainer'])));
 		}
 		
-		
-		$elemsAttr = array();
-		foreach(Set::normalize($opt['toAttributes']) as $key => $val){
-			if(array_key_exists($key,$opt) && $opt[$key] !== false){
-				$elemsAttr[$key] = $this->_parseAttributes($opt[$key]);
-			}else{
-				$elemsAttr[$key] = false;
-			}
-		}
+		$elemsAttr = $this->_multiParseAttributes($opt,$opt['toAttributes'],array('isolate'=>true));
 		
 		$view =& ClassRegistry::getObject('view');
-		$elemOpt = array('plugin'=>'o2form','fieldName'=>$fieldName,'lines'=>$lines,'elemsAttr'=>$elemsAttr,'options'=>$opt);
+		$elemOpt = array('plugin'=>'o2form','fieldName'=>$fieldName,'lines'=>$lines,'elemsAttr'=>$elemsAttr,'options'=>$opt,'depth'=>$this->multiple_depth);
 		$elemOpt = array_merge($elemOpt,compact($opt['elemVars']));
+		//debug($elemOpt);
+		
+		$this->multiple_depth++;
 		$html = $view->element($opt['elem'],$elemOpt);
+		$this->multiple_depth--;
 		
 		return $html;
+	}
+	
+	function _multipleTablePreprocess($opt){
+		$sublineOpt =  array(
+			'inputs' => array(),
+			'tr'=>array(
+				'class'=>array('subline'),
+			),
+			'td'=>array(
+			),
+			'collapse' => true,
+		);
+		if(!empty($opt['subline'])){
+			if(empty($opt['subline']['fields'])){
+				$opt['subline'] = array('fields'=>$opt['subline']);
+			}
+			$opt['subline'] = Set::merge($sublineOpt,$opt['subline']);
+		}
+		return $opt;
+	}
+	
+	function _multipleTableAlterLine($line,$opt){
+		if(!empty($opt['subline']['fields'])){
+			$line['subline']['td']['colspan'] = count($line['inputs']) + 1;
+			if($line['subline']['collapse']){
+				$line['subline']['td']['colspan']++;
+				$line['subline']['tr']['class'][] = 'collapsible collapsed';
+			}
+			$line['subline']['inputs'] = $this->_multipleParseLineFields($opt['subline']['fields'],$line,$opt);
+			unset($line['subline']['fields']);
+		}else{
+			unset($line['subline']);
+		}
+		return $line;
+	}
+	
+	function _multipleParseLineFields($fields,&$line,$opt){
+		$hiddens = array();
+		$inputs = array();
+		foreach($tmp = $fields as $key => $field){
+			if(!empty($line['fieldsOpt'])){
+				$field = array_merge($line['fieldsOpt'],$field);
+			}
+			if(empty($field['type']) || $field['type'] != 'hidden'){
+				if($key != '__val__'){
+					$subFieldName = $opt['fullFieldName'].'.'.$line['index'].'.'.$key;
+				}else{
+					$subFieldName = $opt['fullFieldName'].'.'.$line['index'];
+				}
+				$inputs[$subFieldName] = $field;
+			}else{
+				$hiddens[$key] = $field;
+			}
+		}
+		foreach($hiddens as $key => $field){
+			if(!empty($line['fieldsOpt'])){
+				$field = array_merge($line['fieldsOpt'],$field);
+			}
+			if($key == 'id'){
+				$optDelete = $opt['deleteField'];
+				if(!empty($line['fieldsOpt'])){
+					$optDelete = array_merge($line['fieldsOpt'],$optDelete);
+				}
+				$line['hidden'][$opt['fullFieldName'].'.'.$line['index'].'.delete'] = $optDelete;
+				$field['spc'] = 'keyInput';
+			}
+			$line['hidden'][$opt['fullFieldName'].'.'.$line['index'].'.'.$key] = $field;
+		}
+		return $inputs;
 	}
 	
 	function datepicker($fieldName, $options = array()){
@@ -868,6 +930,18 @@ class O2formHelper extends FormHelper {
 	
 	////////////////////////// Other functions //////////////////////////
 	
+	function conditionalBlock($block,$field,$value,$options=array()){
+		$this->Html->script('/o2form/js/conditional_block',array('inline'=>false));
+		$def = array(
+			'tag' => 'div',
+			'class' => array('conditionalBlock'),
+			'source' => '#'.$this->domId($field),
+			'when' => is_array($value) ? json_encode($value) : $value,
+		);
+		$opt = array_merge($def,$options);
+		return '<'.$opt['tag'].' '.$this->_parseAttributes($opt,array('tag')).'>'.$block.'</'.$opt['tag'].'>';
+	}
+	
 	function datepickerScript($selector=null, $options = array()){
 		$html = '';
 		$html .= $this->loadAsset('jquery-ui','css');
@@ -1091,6 +1165,33 @@ class O2formHelper extends FormHelper {
 			$output = $this->Html->tag($tag, $output, $divOptions);
 		}
 		return $output;
+	}
+	
+	function _multiParseAttributes($data,$keys, $default = array()){
+		$def = array(
+			'exclude' => null,
+			'insertBefore' => ' ',
+			'insertAfter' => null,
+			'isolate' => false,
+		);
+		$def = array_merge($def,$default);
+		if($def['isolate']){
+			$attrs = array();
+		}else{
+			$attrs = $data;
+		}
+		foreach(Set::normalize($keys) as $key => $opt){
+			$opt = array_merge($def,(array)$opt);
+			if(Set::check($data,$key)){
+				$parsed = false;
+				$unparsed = Set::extract($key,$data);
+				if($unparsed !== false){
+					$parsed = $this->_parseAttributes($unparsed,$opt['exclude'],$opt['insertBefore'],$opt['insertAfter']);
+				}
+				$attrs = Set::insert($attrs, $key, $parsed);
+			}
+		}
+		return $attrs;
 	}
 	function _parseAttributes($options, $exclude = null, $insertBefore = ' ', $insertAfter = null){
 		$options = $this->normalizeAttributesOpt($options);

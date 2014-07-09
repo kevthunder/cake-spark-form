@@ -1,3 +1,4 @@
+//could be split between in two : extendedSelect and linkedSelect
 (function( $ ) {
 	$(function(){
 		$(".extendedSelect").each(initOther);
