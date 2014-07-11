@@ -914,16 +914,23 @@ class O2formHelper extends FormHelper {
 	}
 	function definition($fieldName, $options = array()){
 		$out = '';
+		$labelTag = empty($options['label']['tag']) 
+			? ( empty($options['div']) ? 'span' : 'dt' )
+			: $options['label']['tag'];
+		$contentTag = empty($options['tag']) 
+			? ( empty($options['div']) ? 'span' : 'dd' )
+			: $options['tag'];
+		
 		$labelText = $this->defaultLabelText($fieldName, $options);
 		if ($labelText) {
-			$out .= $this->Html->tag('dt', h($labelText), array());
+			$out .= $this->Html->tag($labelTag, h($labelText), array());
 		}
-		if (isset($opt['value'])) {
-			$value = $opt['value'];
+		if (isset($options['value'])) {
+			$value = $options['value'];
 		} else {
 			$value =  $this->value($fieldName);
 		}
-		$out .= $this->Html->tag('dd', h($value), array());
+		$out .= $this->Html->tag($contentTag, h($value), array());
 		
 		return $this->_divWrapper($fieldName, $out, $options, array('tag'=>'dl'));
 	}
