@@ -34,7 +34,7 @@
       if(!data){
         data = $(this)
       }else{
-        data.add($(this));
+        data = data.add($(this));
       }
       $source.data('conditionalBlock',data);
       $source.bind('change.conditionalBlock',eventHandler);
