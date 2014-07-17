@@ -172,7 +172,9 @@
 					var count = $table.multiple('controls','.line:not(.modelLine)').length;
 
 					$clone.each(function(){
-            $(this).removeClass('modelLine').find('input, textarea, select').attr('disabled',false);
+            $(this).removeClass('modelLine').find('input, textarea, select').filter(function(){
+              return $(this).parents('.modelLine').length == 0;
+            }).removeAttr('disabled');
           });
           var $replace = '---'+String.fromCharCode(105 + parseInt($table.attr("depth")))+'---';
 					$last.after($('<div/>').append($clone).html().replace(new RegExp($replace, "g"),count));
