@@ -1,8 +1,8 @@
 <?php
-class PaginateSelectController extends O2formAppController {
+class PaginateSelectController extends SparkFormAppController {
 
 	var $name = 'PaginateSelect';
-	var $helpers = array('O2form.O2form');
+	var $helpers = array('SparkForm.SparkForm');
 	var $uses = array();
 	var $components = array('RequestHandler');
 	

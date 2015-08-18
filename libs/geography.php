@@ -1,7 +1,7 @@
 <?php 
 class Geography extends Object {
 	
-	// App::import('Lib', 'O2form.Geography');
+	// App::import('Lib', 'SparkForm.Geography');
 	
 	var $regions = array(
 		'CA' => array(
@@ -630,7 +630,7 @@ class Geography extends Object {
 			
 			if($opt['translate']){
 				foreach ($list as &$val) {
-					$val = __d('o2form',$val,true);
+					$val = __d('spark_form',$val,true);
 				}
 				$continent = __($continent,true);
 			}
@@ -661,7 +661,7 @@ class Geography extends Object {
 		$val = $countries[$code];
 		
 		if($translate){
-			$val = __d('o2form',$val,true);
+			$val = __d('spark_form',$val,true);
 		}
 		
 		return $val;
@@ -732,7 +732,7 @@ class Geography extends Object {
 		
 		$normalRight = strtolower(Inflector::slug($name));
 		foreach ($countries as $code => $val) {
-			$normalLeft = strtolower(Inflector::slug(__d('o2form',$val,true)));
+			$normalLeft = strtolower(Inflector::slug(__d('spark_form',$val,true)));
 			$normalLeft2 = strtolower(Inflector::slug($val));
 			if($normalLeft == $normalRight || $normalLeft2 == $normalRight){
 				return $code;
@@ -751,7 +751,7 @@ class Geography extends Object {
 			$regions = array();
 			foreach ($allregions as $country => $r) {
 				foreach ($r as $code => $region) {
-					$regions[$country][$code] = __d('o2form',$region,true);
+					$regions[$country][$code] = __d('spark_form',$region,true);
 				}
 			}
 			return $regions;
@@ -763,7 +763,7 @@ class Geography extends Object {
 			$regions = $_this->regions[$countryCode];
 			if($translate){
 				foreach ($regions as &$val) {
-					$val = __d('o2form',$val,true);
+					$val = __d('spark_form',$val,true);
 				}
 			}
 			return $regions;
@@ -787,7 +787,7 @@ class Geography extends Object {
 			}
 			if(!empty($res) && !is_array($res)){
 				if($translate){
-					$res = __d('o2form',$res,true);
+					$res = __d('spark_form',$res,true);
 				}
 				return $res;
 			}

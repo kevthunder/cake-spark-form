@@ -1,7 +1,7 @@
 <?php
 App::import('Helper','Form');
 
-class O2formHelper extends FormHelper {
+class SparkFormHelper extends FormHelper {
 	
 	var $helpers = array('Html', 'Form', 'Javascript');
 	
@@ -25,11 +25,11 @@ class O2formHelper extends FormHelper {
 	var $preprocConflicts = array('region'=>array('label_aposition'));
 	 
 	function __construct(){
-		App::import('Lib', 'O2form.O2formConfig');
+		App::import('Lib', 'SparkForm.SparkFormConfig');
 		
-		$preprocessors = O2formConfig::load('preprocessors');
+		$preprocessors = SparkFormConfig::load('preprocessors');
 		$preprocessors = array_merge($this->preprocessors, (array)$preprocessors);
-		$customTypes = O2formConfig::load('customTypes');
+		$customTypes = SparkFormConfig::load('customTypes');
 		$customTypes = array_merge($this->customTypes, (array)$customTypes);
 		
 		$callbacklists = array(&$customTypes,&$preprocessors);
@@ -81,7 +81,7 @@ class O2formHelper extends FormHelper {
  *
  * exemple option null_checkbox :
  * view :
- *   echo $this->O2form->input('end',array('null_checkbox'=>__('Never',true)));
+ *   echo $this->SparkForm->input('end',array('null_checkbox'=>__('Never',true)));
  * controller :
  *   if(!empty($this->data['Job']['end_null'])){
  *      $this->data['Job']['end'] = null;
@@ -163,7 +163,7 @@ class O2formHelper extends FormHelper {
 			
 			$this->setEntity($fieldName);
 			//$this->Javascript->link('jquery-1.3.2.min', false); 
-			$this->Javascript->link('/o2form/js/o2form', null, array('inline'=>false)); 
+			$this->Javascript->link('/spark_form/js/spark_form', null, array('inline'=>false)); 
 			
 			if(!isset($options['before'])){
 				$options['before'] = '';
@@ -215,7 +215,7 @@ class O2formHelper extends FormHelper {
 	}
 	
 	function name_to_type($fieldName, $options = array()){
-		$nameToType = Configure::read('O2form.nameToType');
+		$nameToType = Configure::read('SparkForm.nameToType');
 		$nameToType = Set::normalize($nameToType);
 		if(!empty($nameToType) && empty($options['type']) && !empty($nameToType[$fieldName])){
 			$type = $nameToType[$fieldName];
@@ -394,7 +394,7 @@ class O2formHelper extends FormHelper {
 		$options = $this->__name($options,$fieldName);
 		if($options['provider'] == 'default'){
 			$options['provider'] = array(
-					'plugin'=>'o2form',
+					'plugin'=>'spark_form',
 					'controller'=>'paginate_select',
 					'model'=>$options['model'],
 					'action'=>'page'
@@ -407,14 +407,14 @@ class O2formHelper extends FormHelper {
 		}
 		$labelElement = $this->labelFor($fieldName, $options);
 		//debug($options);
-		return $view->element('paginated_select',array('plugin'=>'o2form','options'=>$options,'label'=>$labelElement)); 
+		return $view->element('paginated_select',array('plugin'=>'spark_form','options'=>$options,'label'=>$labelElement)); 
 	}
 	
 	var $multiple_depth = 0;
 	function multiple($fieldName, $options = array() ){
 		//debug($options);
-		$this->Html->script('/o2form/js/multiple',array('inline'=>false));
-		$this->Html->css('/o2form/css/multiple',null,array('inline'=>false));
+		$this->Html->script('/spark_form/js/multiple',array('inline'=>false));
+		$this->Html->css('/spark_form/css/multiple',null,array('inline'=>false));
 		if(!array_key_exists('fields',$options)){
 			if(empty($options['type']) || $options['type'] != 'multiple'){
 				$options['fields'] = $options;
@@ -609,7 +609,7 @@ class O2formHelper extends FormHelper {
 		$elemsAttr = $this->_multiParseAttributes($opt,$opt['toAttributes'],array('isolate'=>true));
 		
 		$view =& ClassRegistry::getObject('view');
-		$elemOpt = array('plugin'=>'o2form','fieldName'=>$fieldName,'lines'=>$lines,'elemsAttr'=>$elemsAttr,'options'=>$opt,'depth'=>$this->multiple_depth);
+		$elemOpt = array('plugin'=>'spark_form','fieldName'=>$fieldName,'lines'=>$lines,'elemsAttr'=>$elemsAttr,'options'=>$opt,'depth'=>$this->multiple_depth);
 		$elemOpt = array_merge($elemOpt,compact($opt['elemVars']));
 		//debug($elemOpt);
 		
@@ -732,7 +732,7 @@ class O2formHelper extends FormHelper {
 			'options' => true,
 		);
 		$opt = array_merge($defOpt,$options);
-		App::import('Lib', 'O2form.Geography');
+		App::import('Lib', 'SparkForm.Geography');
 		$foward = array('translate','continent');
 		$countries = Geography::getCountries(null,array_intersect_key($opt,array_flip($foward)));
 		if($opt['options'] === true){
@@ -780,7 +780,7 @@ class O2formHelper extends FormHelper {
 		$opt = $this->mergeOpt($defOpt,$options);
 		$loadScript = false;
 		$out = null;
-		App::import('Lib', 'O2form.Geography');
+		App::import('Lib', 'SparkForm.Geography');
 		$regions = array();
 		$needMore = false;
 		if($opt['options'] === true){
@@ -874,7 +874,7 @@ class O2formHelper extends FormHelper {
 		
 		
 		if($loadScript){
-			$this->Html->script('/o2form/js/region_select',array('inline'=>false));
+			$this->Html->script('/spark_form/js/region_select',array('inline'=>false));
 		}
 		return $out;
 	}
@@ -938,7 +938,7 @@ class O2formHelper extends FormHelper {
 	////////////////////////// Other functions //////////////////////////
 	
 	function conditionalBlock($block,$field,$value,$options=array()){
-		$this->Html->script('/o2form/js/conditional_block',array('inline'=>false));
+		$this->Html->script('/spark_form/js/conditional_block',array('inline'=>false));
 		$def = array(
 			'tag' => 'div',
 			'class' => array('conditionalBlock'),
@@ -1215,8 +1215,8 @@ class O2formHelper extends FormHelper {
 			}
 			$url = $default;
 			$res = '';
-			App::import('Lib', 'O2form.O2formConfig');
-			$conf = O2formConfig::load('load'.ucfirst($type).'.'.$alias);
+			App::import('Lib', 'SparkForm.SparkFormConfig');
+			$conf = SparkFormConfig::load('load'.ucfirst($type).'.'.$alias);
 			if($conf){
 				$url = $conf;
 			}

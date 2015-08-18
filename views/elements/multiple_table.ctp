@@ -2,7 +2,7 @@
 <div<?php echo $elemsAttr['div'] ?>>
 <?php } ?>
 	<?php if( !empty($options['before']) ) echo $options['before']; ?>
-	<?php echo $this->O2form->labelFor($fieldName, $options); ?>
+	<?php echo $this->SparkForm->labelFor($fieldName, $options); ?>
 	<table<?php echo $elemsAttr['table'] ?> depth="<?php echo $depth ?>">
 		<?php $rows = 0; ?>
 		<tr>
@@ -27,9 +27,9 @@
 			<?php $i = 0; foreach($line['inputs'] as $key => $input){ ?>
 				<td<?php echo $elemsAttr['td'] ?>>
 					<?php if( $i == 0  && !empty($line['hidden'])) foreach($line['hidden'] as $hkey => $hidden){ ?>
-						<?php echo $this->O2form->input($hkey,$hidden); ?>
+						<?php echo $this->SparkForm->input($hkey,$hidden); ?>
 					<?php } ?>
-					<?php echo $this->O2form->input($key,$input); ?>
+					<?php echo $this->SparkForm->input($key,$input); ?>
 				</td>
 			<?php  $i++; } ?>
 			<?php if($options['delete'] !== false) { ?>
@@ -42,7 +42,7 @@
 			<tr<?php echo $line['subline']['tr'] ?> rel="line<?php echo $line['index'] ?>">
 				<td<?php echo $line['subline']['td'] ?>>
 					<?php $i = 0; foreach($line['subline']['inputs'] as $key => $input){ ?>
-						<?php echo $this->O2form->input($key,$input); ?>
+						<?php echo $this->SparkForm->input($key,$input); ?>
 					<?php } ?>
 				</td>
 			</tr>

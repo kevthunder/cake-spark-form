@@ -1,25 +1,25 @@
 <?php
-class O2formConfig extends Object {
+class SparkFormConfig extends Object {
 	/*
-		App::import('Lib', 'O2form.O2formConfig');
-		O2formConfig::load();
+		App::import('Lib', 'SparkForm.SparkFormConfig');
+		SparkFormConfig::load();
 	*/
 	
 	var $loaded = false;
 	var $defaultConfig = array(
 		'loadJs'=>array(
-			'jquery-ui' => '/O2form/js/jquery-ui-1.8.20.custom.min',
+			'jquery-ui' => '/spark_form/js/jquery-ui-1.8.20.custom.min',
 		),
 		'loadCss'=>array(
-			'jquery-ui' => '/O2form/css/jquery-ui/jquery-ui-1.8.20.custom',
+			'jquery-ui' => '/spark_form/css/jquery-ui/jquery-ui-1.8.20.custom',
 		)
 	);
 	
-	//$_this =& O2formConfig::getInstance();
+	//$_this =& SparkFormConfig::getInstance();
 	function &getInstance() {
 		static $instance = array();
 		if (!$instance) {
-			$instance[0] =& new O2formConfig();
+			$instance[0] =& new SparkFormConfig();
 		}
 		return $instance[0];
 	}
@@ -27,20 +27,20 @@ class O2formConfig extends Object {
 	function load($path = true){
 	
 	
-		$_this =& O2formConfig::getInstance();
+		$_this =& SparkFormConfig::getInstance();
 		if(!$_this->loaded){
-			config('plugins/o2form');
-			$config = Configure::read('O2form');
+			config('plugins/spark_form');
+			$config = Configure::read('SparkForm');
 			$config = Set::merge($_this->defaultConfig,$config);
-			Configure::write('O2form',$config);
+			Configure::write('SparkForm',$config);
 			$_this->loaded = true;
 			
 			if( in_array('Filter',App::Objects('plugin')) ) {
-				Configure::Write('Filter.FormHelper','O2form.O2form');
+				Configure::Write('Filter.FormHelper','SparkForm.SparkForm');
 			}
 		}
 		if(!empty($path)){
-			return Configure::read('O2form'.($path!==true?'.'.$path:''));
+			return Configure::read('SparkForm'.($path!==true?'.'.$path:''));
 		}
 	}
 	

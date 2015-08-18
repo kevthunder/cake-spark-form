@@ -24,7 +24,7 @@
 			}else{
 				$class[] = 'right';
 			}
-			echo $this->element('select_item',array('plugin'=>'o2form','options'=>$options,'values'=>$option[$options['model']],'class'=>$class,'selected'=>false));
+			echo $this->element('select_item',array('plugin'=>'spark_form','options'=>$options,'values'=>$option[$options['model']],'class'=>$class,'selected'=>false));
 			$i++;
 		} 
 		?>

@@ -1,6 +1,6 @@
 <?php
 
-class O2formAppModel extends AppModel {
+class SparkFormAppModel extends AppModel {
 
 }
 

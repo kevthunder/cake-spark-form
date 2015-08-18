@@ -1,1 +1,1 @@
-<?php echo $this->element('select_page',array('plugin'=>'o2form','options'=>$options)); ?>
+<?php echo $this->element('select_page',array('plugin'=>'spark_form','options'=>$options)); ?>
